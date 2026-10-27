@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# Sensitive Configuration & Credentials
+config.json
+connected_accounts.json
+.env
+*token*.py
+save_*.py
+
+# Local Database & Logs
+*.db
+*.sqlite
+*.log
+
+# Media & Temporary upload files
+processed_media/
+watch_folders/
+*.mp4
+*.jpg
+*.jpeg
+*.png
+
+# OS generated files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,21 @@
+{
+    "gemini_api_key": "",
+    "gemini_model": "gemini-1.5-flash",
+    "openai_api_key": "",
+    "openai_model": "gpt-4o-mini",
+    "ai_engine": "auto",
+    "brand_name": "JANI's Perfume",
+    "meta_access_token": "",
+    "instagram_account_id": "",
+    "facebook_page_id": "",
+    "posting_mode": "instant",
+    "daily_limit_insta": 3,
+    "daily_limit_facebook": 3,
+    "min_delay_minutes": 120,
+    "max_delay_minutes": 240,
+    "scheduler_check_interval_seconds": 15,
+    "image_duration_seconds": 8,
+    "video_width": 1080,
+    "video_height": 1920,
+    "fps": 30
+}
