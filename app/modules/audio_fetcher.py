@@ -40,9 +40,16 @@ DEFAULT_TRENDING_TRACKS = [
 
 class ViralAudioService:
     def __init__(self, library_dir: Optional[str] = None):
-        self.library_dir = library_dir or config_manager.config.audio_library_folder
-        os.makedirs(self.library_dir, exist_ok=True)
-        self.ensure_default_sounds()
+        if os.environ.get("VERCEL"):
+            self.library_dir = "/tmp/audio_library"
+        else:
+            self.library_dir = library_dir or config_manager.config.audio_library_folder
+        try:
+            os.makedirs(self.library_dir, exist_ok=True)
+            if not os.environ.get("VERCEL"):
+                self.ensure_default_sounds()
+        except Exception:
+            pass
 
     def ensure_default_sounds(self):
         """Ensures that at least one viral audio track exists in the audio library."""

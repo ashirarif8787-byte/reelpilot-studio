@@ -15,8 +15,14 @@ from app.utils.logger import logger
 
 class MediaProcessor:
     def __init__(self, output_dir: Optional[str] = None):
-        self.output_dir = output_dir or config_manager.config.processed_folder
-        os.makedirs(self.output_dir, exist_ok=True)
+        if os.environ.get("VERCEL"):
+            self.output_dir = "/tmp/processed_media"
+        else:
+            self.output_dir = output_dir or config_manager.config.processed_folder
+        try:
+            os.makedirs(self.output_dir, exist_ok=True)
+        except Exception:
+            pass
 
     def process_media(
         self,
