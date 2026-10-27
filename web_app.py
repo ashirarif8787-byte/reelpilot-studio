@@ -1332,6 +1332,11 @@ HTML_STUDIO_V35 = """
 
             try {
                 const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                if (!res.ok) {
+                    const errText = await res.text();
+                    showToast("Upload Error: " + (errText.slice(0, 100) || res.statusText), "error");
+                    return;
+                }
                 const data = await res.json();
                 if (data.success) {
                     showToast(`Post successfully created for ${platform.toUpperCase()}!`);
@@ -1339,6 +1344,8 @@ HTML_STUDIO_V35 = """
                     document.getElementById('post-selected-file-label').innerText = '';
                     document.getElementById('media-preview-box').classList.add('d-none');
                     loadReelsFeed();
+                } else {
+                    showToast("Error: " + (data.error || "Upload failed"), "error");
                 }
             } catch (e) {
                 showToast("Error: " + e, "error");
@@ -1840,41 +1847,71 @@ def api_settings():
 
 @app.route("/api/upload", methods=["POST"])
 def api_upload():
-    if "file" not in request.files:
-        return jsonify({"success": False, "error": "No file uploaded"}), 400
-    file = request.files["file"]
-    platform = request.form.get("platform", "instagram")
+    try:
+        if "file" not in request.files:
+            return jsonify({"success": False, "error": "No file uploaded"}), 400
+        file = request.files["file"]
+        platform = request.form.get("platform", "instagram")
 
-    if file.filename == "":
-        return jsonify({"success": False, "error": "Empty filename"}), 400
+        if file.filename == "":
+            return jsonify({"success": False, "error": "Empty filename"}), 400
 
-    filename = secure_filename(file.filename)
-    
-    # Support cross-posting to All 3
-    if platform == "all":
-        platforms_to_save = ["instagram", "tiktok", "facebook"]
-    else:
-        platforms_to_save = [platform]
-
-    saved_paths = []
-    file_bytes = file.read()
-
-    for p in platforms_to_save:
-        if p == "instagram":
-            target_dir = config_manager.config.watch_folder_insta
-        elif p == "tiktok":
-            target_dir = config_manager.config.watch_folder_tiktok
+        filename = secure_filename(file.filename)
+        if not filename:
+            filename = f"media_{int(time.time())}.jpg"
+        
+        if platform == "all":
+            platforms_to_save = ["instagram", "facebook"]
         else:
-            target_dir = config_manager.config.watch_folder_facebook
+            platforms_to_save = [platform]
 
-        os.makedirs(target_dir, exist_ok=True)
-        target_path = os.path.join(target_dir, filename)
-        with open(target_path, "wb") as f:
-            f.write(file_bytes)
-        saved_paths.append(target_path)
-        logger.info(f"[WebUpload] Received {filename} into {target_dir}")
+        saved_paths = []
+        file_bytes = file.read()
 
-    return jsonify({"success": True, "saved_paths": saved_paths})
+        for p in platforms_to_save:
+            if IS_VERCEL:
+                target_dir = f"/tmp/watch_folders/{p}"
+            else:
+                if p == "instagram":
+                    target_dir = config_manager.config.watch_folder_insta
+                elif p == "tiktok":
+                    target_dir = config_manager.config.watch_folder_tiktok
+                else:
+                    target_dir = config_manager.config.watch_folder_facebook
+
+            os.makedirs(target_dir, exist_ok=True)
+            target_path = os.path.join(target_dir, filename)
+            with open(target_path, "wb") as f:
+                f.write(file_bytes)
+            saved_paths.append(target_path)
+            logger.info(f"[WebUpload] Received {filename} into {target_dir}")
+
+        current_db = get_db()
+        if current_db:
+            for p in platforms_to_save:
+                target_path = os.path.join(f"/tmp/watch_folders/{p}" if IS_VERCEL else target_dir, filename)
+                try:
+                    f_hash = current_db.calculate_file_hash(target_path)
+                    post_id = current_db.insert_post(
+                        file_path=target_path,
+                        file_hash=f_hash,
+                        target_platform=p,
+                        media_type="image" if any(filename.lower().endswith(x) for x in [".jpg", ".jpeg", ".png", ".webp"]) else "video"
+                    )
+                    if post_id:
+                        current_db.update_post(
+                            post_id=post_id,
+                            caption=f"🌸 Luxury Fragrance Experience from {config_manager.config.brand_name}!",
+                            hashtags="#JanisPerfume #Luxury #Fragrance #Trending",
+                            status=PostStatus.QUEUED.value
+                        )
+                except Exception as dbe:
+                    logger.warning(f"DB insert post warning: {dbe}")
+
+        return jsonify({"success": True, "saved_paths": saved_paths})
+    except Exception as e:
+        logger.error(f"[api_upload] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == "__main__":
     print("================================================================")
