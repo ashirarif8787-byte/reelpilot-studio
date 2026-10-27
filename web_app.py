@@ -25,8 +25,15 @@ sys.path.insert(0, ROOT_DIR)
 from app.config import config_manager
 from app.database.db import DatabaseManager
 from app.database.models import PostStatus, Platform
-from app.modules.watcher import FolderWatcherService
-from app.modules.scheduler import SocialScheduler
+try:
+    from app.modules.watcher import FolderWatcherService
+except Exception:
+    FolderWatcherService = None
+
+try:
+    from app.modules.scheduler import SocialScheduler
+except Exception:
+    SocialScheduler = None
 from app.modules.caption_generator import caption_generator
 from app.modules.uploaders import MetaUploader, TikTokUploader
 from app.modules.audio_fetcher import audio_service
