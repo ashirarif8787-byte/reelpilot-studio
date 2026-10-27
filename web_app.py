@@ -49,12 +49,25 @@ register_ui_log_listener(log_listener)
 
 IS_VERCEL = bool(os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"))
 
-db = DatabaseManager()
-scheduler = SocialScheduler(db=db)
-watcher = FolderWatcherService(db=db)
+db = None
+scheduler = None
+watcher = None
+
+def get_db():
+    global db
+    if db is None:
+        try:
+            db = DatabaseManager()
+        except Exception as e:
+            logger.warning(f"DB lazy init warning: {e}")
+            db = None
+    return db
 
 if not IS_VERCEL:
     try:
+        db = get_db()
+        scheduler = SocialScheduler(db=db)
+        watcher = FolderWatcherService(db=db)
         watcher.start()
         scheduler.start()
     except Exception as e:
@@ -1481,16 +1494,17 @@ def index():
 
 @app.route("/api/status")
 def api_status():
-    today_insta = db.count_uploads_today("instagram")
-    today_tiktok = db.count_uploads_today("tiktok")
-    today_fb = db.count_uploads_today("facebook")
-    all_queued = db.get_posts()
+    current_db = get_db()
+    today_insta = current_db.count_uploads_today("instagram") if current_db else 0
+    today_tiktok = current_db.count_uploads_today("tiktok") if current_db else 0
+    today_fb = current_db.count_uploads_today("facebook") if current_db else 0
+    all_queued = current_db.get_posts() if current_db else []
     active_in_queue = sum(1 for p in all_queued if p.status in [PostStatus.QUEUED.value, PostStatus.PROCESSING.value, PostStatus.SCHEDULED.value])
 
     return jsonify({
-        "watcher_running": watcher.is_running,
-        "scheduler_running": scheduler.is_running,
-        "scheduler_paused": scheduler.is_paused,
+        "watcher_running": watcher.is_running if watcher else False,
+        "scheduler_running": scheduler.is_running if scheduler else False,
+        "scheduler_paused": scheduler.is_paused if scheduler else False,
         "posting_mode": config_manager.config.posting_mode,
         "today_insta": today_insta,
         "today_tiktok": today_tiktok,
@@ -1510,7 +1524,8 @@ def api_scheduler_mode():
 
 @app.route("/api/posts")
 def api_posts():
-    posts = db.get_posts(limit=100)
+    current_db = get_db()
+    posts = current_db.get_posts(limit=100) if current_db else []
     result = []
     for p in posts:
         d = p.__dict__.copy()
@@ -1772,19 +1787,22 @@ def api_serve_video(filename):
 
 @app.route("/api/posts/<int:post_id>/post-now", methods=["POST"])
 def api_post_now(post_id):
-    post = db.get_post(post_id)
+    current_db = get_db()
+    post = current_db.get_post(post_id) if current_db else None
     if not post:
         return jsonify({"success": False, "error": "Post not found"}), 404
 
     def do_upload():
-        scheduler._execute_upload(post)
+        if scheduler:
+            scheduler._execute_upload(post)
 
     threading.Thread(target=do_upload, daemon=True).start()
     return jsonify({"success": True, "message": f"Upload triggered for post #{post_id}"})
 
 @app.route("/api/posts/<int:post_id>/delete", methods=["POST"])
 def api_delete_post(post_id):
-    success = db.delete_post(post_id)
+    current_db = get_db()
+    success = current_db.delete_post(post_id) if current_db else False
     return jsonify({"success": success})
 
 @app.route("/api/settings", methods=["GET", "POST"])
