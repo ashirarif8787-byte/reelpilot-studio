@@ -51,6 +51,91 @@ class ViralAudioService:
         except Exception:
             pass
 
+    
+    def search_worldwide_tracks(self, query: str = "", limit: int = 25):
+        if not query or not query.strip():
+            query = "Trending Viral Hits"
+
+        try:
+            url = "https://itunes.apple.com/search"
+            params = {
+                "term": query.strip(),
+                "entity": "song",
+                "limit": limit
+            }
+            resp = requests.get(url, params=params, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                results = []
+                for item in data.get("results", []):
+                    preview = item.get("previewUrl")
+                    if not preview:
+                        continue
+                    artwork = item.get("artworkUrl100", "").replace("100x100bb", "600x600bb")
+                    results.append({
+                        "id": str(item.get("trackId", "")),
+                        "title": item.get("trackName", "Unknown Track"),
+                        "artist": item.get("artistName", "Unknown Artist"),
+                        "collection": item.get("collectionName", ""),
+                        "artwork": artwork,
+                        "preview_url": preview,
+                        "duration_ms": item.get("trackTimeMillis", 30000),
+                        "duration_sec": round(item.get("trackTimeMillis", 30000) / 1000)
+                    })
+                return results
+        except Exception as e:
+            logger.error(f"[AudioFetcher] Worldwide search error: {e}")
+
+        return [
+            {
+                "id": str(i),
+                "title": t["title"],
+                "artist": "Curated Beats",
+                "collection": "Viral Hits",
+                "artwork": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600",
+                "preview_url": t["url"],
+                "duration_ms": 30000,
+                "duration_sec": 30
+            }
+            for i, t in enumerate(DEFAULT_TRENDING_TRACKS)
+        ]
+
+    def download_and_trim_track(self, preview_url: str, start_sec: int = 0, duration_sec: int = 30) -> Optional[str]:
+        """
+        Downloads a worldwide song preview stream and trims it to specified start offset and duration.
+        """
+        try:
+            filename = f"track_{int(time.time())}_{start_sec}_{duration_sec}.mp3"
+            raw_path = os.path.join(self.library_dir, f"raw_{filename}")
+            trimmed_path = os.path.join(self.library_dir, filename)
+
+            resp = requests.get(preview_url, timeout=15)
+            if resp.status_code != 200:
+                return None
+            with open(raw_path, "wb") as f:
+                f.write(resp.content)
+
+            try:
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-ss", str(start_sec),
+                    "-t", str(duration_sec),
+                    "-i", raw_path,
+                    "-acodec", "libmp3lame",
+                    "-ar", "44100",
+                    "-b:a", "192k",
+                    trimmed_path
+                ]
+                subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+                if os.path.exists(raw_path):
+                    os.remove(raw_path)
+                return trimmed_path
+            except Exception:
+                return raw_path
+        except Exception as e:
+            logger.error(f"[AudioFetcher] Error downloading/trimming track: {e}")
+            return None
+
     def ensure_default_sounds(self):
         """Ensures that at least one viral audio track exists in the audio library."""
         existing_files = self.get_available_tracks()

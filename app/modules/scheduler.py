@@ -155,43 +155,71 @@ class SocialScheduler:
         return next_time
 
     def _process_unprocessed_queue(self):
-        """Pulls QUEUED posts, renders media, generates viral caption, and schedules them."""
+        """Pulls QUEUED posts, renders media (videos only), generates viral caption, and schedules them."""
         queued_posts = self.db.get_posts(status=PostStatus.QUEUED.value, limit=5)
         for post in queued_posts:
             if self._stop_event.is_set():
                 break
 
-            logger.info(f"[Scheduler] Processing post #{post.id} ({os.path.basename(post.file_path)})...")
+            media_type = getattr(post, "media_type", "image") or "image"
+            logger.info(f"[Scheduler] Processing post #{post.id} ({media_type})...")
             self.db.update_post(post.id, status=PostStatus.PROCESSING.value)
             self._notify_update()
 
-            # 1. Media Processing (Audio + 1080x1920 Reel)
-            success, processed_path, err = media_processor.process_media(
-                input_path=post.file_path,
-                target_platform=post.target_platform
-            )
-            if not success:
-                logger.error(f"[Scheduler] Media processing failed for post #{post.id}: {err}")
-                self.db.update_post(post.id, status=PostStatus.FAILED.value, error_message=err)
-                self.db.log_event(post.id, post.target_platform, PostStatus.FAILED.value, f"Media processing error: {err}")
-                self._notify_update()
-                continue
+            processed_path = post.file_path
+            caption = post.caption or ""
+            hashtags = post.hashtags or ""
 
-            # 2. AI Vision Caption & Hashtag Generation (Gemini / OpenAI)
-            caption, hashtags, sound_vibe = caption_generator.generate(
-                file_path=post.file_path,
-                platform=post.target_platform
-            )
+            is_carousel = (media_type == "carousel") or (post.file_path and post.file_path.strip().startswith("["))
+            if is_carousel:
+                try:
+                    photo_list = json.loads(post.file_path)
+                    primary_file = photo_list[0] if photo_list else post.file_path
+                except Exception:
+                    primary_file = post.file_path
+            else:
+                primary_file = post.file_path
 
-            # 3. Calculate randomized human-like delay
-            scheduled_dt = self._calculate_next_post_time(post.target_platform)
+            # 1. Media Processing ONLY for Videos (Native images stay pure images/carousels)
+            if media_type == MediaType.VIDEO.value or (primary_file and any(primary_file.lower().endswith(ext) for ext in [".mp4", ".mov", ".avi", ".mkv"])):
+                success, proc_res, err = media_processor.process_media(
+                    input_path=primary_file,
+                    target_platform=post.target_platform
+                )
+                if not success:
+                    logger.error(f"[Scheduler] Video processing failed for post #{post.id}: {err}")
+                    self.db.update_post(post.id, status=PostStatus.FAILED.value, error_message=err)
+                    self.db.log_event(post.id, post.target_platform, PostStatus.FAILED.value, f"Media processing error: {err}")
+                    self._notify_update()
+                    continue
+                processed_path = proc_res
+            else:
+                processed_path = post.file_path
+
+            # 2. AI Vision Caption & Hashtag Generation (if not already provided)
+            if (not caption or not hashtags) and primary_file and os.path.exists(primary_file):
+                ai_caption, ai_hashtags, sound_vibe = caption_generator.generate(
+                    file_path=primary_file,
+                    platform=post.target_platform
+                )
+                if not caption:
+                    caption = ai_caption
+                if not hashtags:
+                    hashtags = ai_hashtags
+
+            # 3. Scheduling Time: Use user-chosen scheduled time, or calculate delay
+            if post.scheduled_time and str(post.scheduled_time).strip():
+                scheduled_iso = str(post.scheduled_time).strip()
+            else:
+                scheduled_dt = self._calculate_next_post_time(post.target_platform)
+                scheduled_iso = scheduled_dt.isoformat()
 
             self.db.update_post(
                 post.id,
                 processed_path=processed_path,
                 caption=caption,
                 hashtags=hashtags,
-                scheduled_time=scheduled_dt.isoformat(),
+                scheduled_time=scheduled_iso,
                 status=PostStatus.SCHEDULED.value,
                 error_message=None
             )
@@ -199,9 +227,9 @@ class SocialScheduler:
                 post.id,
                 post.target_platform,
                 PostStatus.SCHEDULED.value,
-                f"Scheduled for {scheduled_dt.strftime('%Y-%m-%d %H:%M:%S')}"
+                f"Scheduled for {scheduled_iso}"
             )
-            logger.info(f"⏰ [Scheduler] Post #{post.id} scheduled for {scheduled_dt.strftime('%Y-%m-%d %H:%M:%S')} (Delay set)")
+            logger.info(f"⏰ [Scheduler] Post #{post.id} scheduled for {scheduled_iso}")
             self._notify_update()
 
     def _check_and_upload_due_posts(self):
@@ -235,31 +263,69 @@ class SocialScheduler:
             self._execute_upload(post)
 
     def _execute_upload(self, post: PostRecord):
-        """Uploads a post to its target platform with official APIs."""
-        logger.info(f"[Scheduler] Uploading post #{post.id} to {post.target_platform.upper()}...")
+        """Uploads a post to its target platform with official APIs (Native Carousel, Photo, or Video)."""
+        logger.info(f"[Scheduler] Uploading post #{post.id} ({post.media_type}) to {post.target_platform.upper()}...")
         self.db.update_post(post.id, status=PostStatus.UPLOADING.value)
         self._notify_update()
 
         media_to_upload = post.processed_path or post.file_path
+        caption = post.caption or ""
+        hashtags = post.hashtags or ""
+
+        # Parse multiple paths for carousel if applicable
+        photo_paths = []
+        if post.media_type == "carousel" or (post.file_path and post.file_path.strip().startswith("[")):
+            try:
+                photo_paths = json.loads(post.file_path)
+            except Exception:
+                photo_paths = [post.file_path]
+        else:
+            photo_paths = [media_to_upload]
 
         try:
-            if post.target_platform == Platform.INSTAGRAM.value:
-                success, remote_id, remote_url, err = self.meta_uploader.upload_reel(
-                    video_path=media_to_upload,
-                    caption=post.caption or "",
-                    hashtags=post.hashtags or ""
-                )
+            if post.target_platform == Platform.FACEBOOK.value:
+                if post.media_type == "carousel" or len(photo_paths) > 1:
+                    success, remote_id, remote_url, err = self.meta_uploader.upload_facebook_carousel(
+                        photo_paths_or_urls=photo_paths,
+                        caption=caption,
+                        hashtags=hashtags
+                    )
+                elif post.media_type == "image":
+                    success, remote_id, remote_url, err = self.meta_uploader.upload_facebook_photo(
+                        photo_path_or_url=photo_paths[0],
+                        caption=caption,
+                        hashtags=hashtags
+                    )
+                else:
+                    success, remote_id, remote_url, err = self.meta_uploader.upload_facebook_video(
+                        video_path=media_to_upload,
+                        caption=caption,
+                        hashtags=hashtags
+                    )
+            elif post.target_platform == Platform.INSTAGRAM.value:
+                if post.media_type == "carousel" or len(photo_paths) > 1:
+                    success, remote_id, remote_url, err = self.meta_uploader.upload_instagram_carousel(
+                        media_urls=photo_paths,
+                        caption=caption,
+                        hashtags=hashtags
+                    )
+                elif post.media_type == "image":
+                    success, remote_id, remote_url, err = self.meta_uploader.upload_instagram_photo(
+                        photo_url=photo_paths[0],
+                        caption=caption,
+                        hashtags=hashtags
+                    )
+                else:
+                    success, remote_id, remote_url, err = self.meta_uploader.upload_reel(
+                        video_path=media_to_upload,
+                        caption=caption,
+                        hashtags=hashtags
+                    )
             elif post.target_platform == Platform.TIKTOK.value:
                 success, remote_id, remote_url, err = self.tiktok_uploader.upload_reel(
                     video_path=media_to_upload,
-                    caption=post.caption or "",
-                    hashtags=post.hashtags or ""
-                )
-            elif post.target_platform == Platform.FACEBOOK.value:
-                success, remote_id, remote_url, err = self.meta_uploader.upload_facebook_video(
-                    video_path=media_to_upload,
-                    caption=post.caption or "",
-                    hashtags=post.hashtags or ""
+                    caption=caption,
+                    hashtags=hashtags
                 )
             else:
                 success, remote_id, remote_url, err = False, None, None, f"Unsupported platform: {post.target_platform}"

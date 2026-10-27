@@ -32,6 +32,13 @@ class AppConfig:
     tiktok_access_token: str = ""
     tiktok_open_id: str = ""
 
+    # Cloudflare R2 Storage (Free 10GB persistent hosting)
+    r2_account_id: str = ""
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket_name: str = ""
+    r2_public_domain: str = ""
+
     # Scheduling & Daily Limits
     posting_mode: str = "human_delay"  # "instant" or "human_delay"
     daily_limit_insta: int = 3
