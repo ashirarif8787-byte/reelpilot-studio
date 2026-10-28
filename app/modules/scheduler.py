@@ -376,3 +376,138 @@ class SocialScheduler:
             logger.error(f"[Scheduler] Post #{post.id} failed: {err_msg}")
 
         self._notify_update()
+
+
+def execute_post_upload(post_id: int, db=None):
+    """Standalone post uploader callable from Web, Vercel, or background daemon."""
+    if db is None:
+        from app.database.db import DatabaseManager
+        db = DatabaseManager()
+    if not db:
+        return False, None, "Database unavailable"
+
+    post = db.get_post(post_id)
+    if not post:
+        return False, None, f"Post #{post_id} not found"
+
+    db.update_post(post.id, status=PostStatus.UPLOADING.value)
+    
+    from app.modules.uploaders.meta_uploader import MetaUploader
+    from app.modules.uploaders.tiktok_uploader import TikTokUploader
+    meta_uploader = MetaUploader()
+    tiktok_uploader = TikTokUploader()
+
+    media_to_upload = post.processed_path or post.file_path
+    caption = post.caption or ""
+    hashtags = post.hashtags or ""
+
+    photo_paths = []
+    if post.media_type == "carousel" or (post.file_path and post.file_path.strip().startswith("[")):
+        try:
+            photo_paths = json.loads(post.file_path)
+        except Exception:
+            photo_paths = [post.file_path]
+    else:
+        photo_paths = [media_to_upload]
+
+    try:
+        if post.target_platform == Platform.FACEBOOK.value:
+            if post.media_type == "carousel" or len(photo_paths) > 1:
+                success, remote_id, remote_url, err = meta_uploader.upload_facebook_carousel(
+                    photo_paths_or_urls=photo_paths,
+                    caption=caption,
+                    hashtags=hashtags
+                )
+            elif post.media_type == "image":
+                success, remote_id, remote_url, err = meta_uploader.upload_facebook_photo(
+                    photo_path_or_url=photo_paths[0],
+                    caption=caption,
+                    hashtags=hashtags
+                )
+            else:
+                success, remote_id, remote_url, err = meta_uploader.upload_facebook_video(
+                    video_path=media_to_upload,
+                    caption=caption,
+                    hashtags=hashtags
+                )
+        elif post.target_platform == Platform.INSTAGRAM.value:
+            if post.media_type == "carousel" or len(photo_paths) > 1:
+                success, remote_id, remote_url, err = meta_uploader.upload_instagram_carousel(
+                    media_urls=photo_paths,
+                    caption=caption,
+                    hashtags=hashtags
+                )
+            elif post.media_type == "image":
+                success, remote_id, remote_url, err = meta_uploader.upload_instagram_photo(
+                    photo_url=photo_paths[0],
+                    caption=caption,
+                    hashtags=hashtags
+                )
+            else:
+                success, remote_id, remote_url, err = meta_uploader.upload_reel(
+                    video_path=media_to_upload,
+                    caption=caption,
+                    hashtags=hashtags
+                )
+        elif post.target_platform == Platform.TIKTOK.value:
+            success, remote_id, remote_url, err = tiktok_uploader.upload_reel(
+                video_path=media_to_upload,
+                caption=caption,
+                hashtags=hashtags
+            )
+        else:
+            success, remote_id, remote_url, err = False, None, None, f"Unsupported platform: {post.target_platform}"
+
+        if success:
+            now_str = datetime.now().isoformat()
+            db.update_post(
+                post.id,
+                status=PostStatus.UPLOADED.value,
+                uploaded_at=now_str,
+                remote_media_id=remote_id,
+                remote_url=remote_url,
+                error_message=None
+            )
+            db.log_event(post.id, post.target_platform, PostStatus.UPLOADED.value, f"Published live. Remote ID: {remote_id} | URL: {remote_url}")
+            logger.info(f"?? [Upload] Post #{post.id} published live to {post.target_platform}! Remote ID: {remote_id}")
+            return True, remote_url or remote_id, "Uploaded successfully"
+        else:
+            db.update_post(post.id, status=PostStatus.FAILED.value, error_message=err)
+            db.log_event(post.id, post.target_platform, PostStatus.FAILED.value, f"Upload error: {err}")
+            logger.error(f"[Upload] Post #{post.id} failed: {err}")
+            return False, None, err
+    except Exception as e:
+        err_msg = str(e)
+        db.update_post(post.id, status=PostStatus.FAILED.value, error_message=err_msg)
+        db.log_event(post.id, post.target_platform, PostStatus.FAILED.value, err_msg)
+        logger.error(f"[Upload] Post #{post.id} exception: {err_msg}")
+        return False, None, err_msg
+
+
+def check_and_upload_due_posts(db=None):
+    """Checks for all SCHEDULED posts that are due now and uploads them."""
+    if db is None:
+        from app.database.db import DatabaseManager
+        db = DatabaseManager()
+    if not db:
+        return []
+
+    scheduled_posts = db.get_posts(status=PostStatus.SCHEDULED.value)
+    now_local = datetime.now()
+    now_utc = datetime.utcnow()
+    uploaded = []
+
+    for post in scheduled_posts:
+        if not post.scheduled_time:
+            continue
+        try:
+            sched_str = str(post.scheduled_time).replace("Z", "").split(".")[0]
+            if len(sched_str) == 16:
+                sched_str += ":00"
+            target_dt = datetime.fromisoformat(sched_str)
+            if target_dt <= now_local or target_dt <= now_utc:
+                ok, rid, msg = execute_post_upload(post.id, db=db)
+                uploaded.append({"post_id": post.id, "success": ok, "remote_id": rid, "message": msg})
+        except Exception as e:
+            logger.warning(f"[check_due] Error on post #{post.id}: {e}")
+    return uploaded

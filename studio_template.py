@@ -1053,6 +1053,12 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             const caption = document.getElementById('post-caption-input').value.trim();
             const hashtags = document.getElementById('post-hashtags-input').value.trim();
             const schedTime = document.getElementById('custom-schedule-datetime').value;
+            let schedTimeUtc = '';
+            if (schedTime) {
+                try {
+                    schedTimeUtc = new Date(schedTime).toISOString();
+                } catch(e) {}
+            }
 
             if (currentScheduleMode === 'calendar' && !schedTime) {
                 showToast("Please pick an exact date and time on the calendar!", "warning");
@@ -1069,6 +1075,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             fd.append('hashtags', hashtags);
             fd.append('schedule_mode', currentScheduleMode);
             fd.append('scheduled_time', schedTime);
+            fd.append('scheduled_time_utc', schedTimeUtc);
 
             showToast("Processing media and configuring multi-platform upload...", "warning");
 
@@ -1119,6 +1126,24 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                     // Formatting exact schedule
                     const dtInfo = ev.dt_info || { exact_date: ev.scheduled_time || 'Queue', exact_time: '', waqt: '', countdown: ev.scheduled_countdown || 'Scheduled' };
 
+                    // Status Badge & Action Button
+                    let statusBadge = '';
+                    let actionBtn = '';
+                    if (ev.status === 'UPLOADED') {
+                        statusBadge = '<span class="badge bg-success text-white fw-bold px-2 py-1"><i class="fa-solid fa-circle-check me-1"></i> POSTED LIVE</span>';
+                        actionBtn = `<button class="btn btn-sm btn-outline-success rounded-pill flex-grow-1 fw-bold disabled"><i class="fa-solid fa-check-double me-1"></i> Posted Live on ${plat.toUpperCase()}</button>`;
+                    } else if (ev.status === 'UPLOADING') {
+                        statusBadge = '<span class="badge bg-warning text-dark fw-bold px-2 py-1"><i class="fa-solid fa-spinner fa-spin me-1"></i> Uploading...</span>';
+                        actionBtn = `<button class="btn btn-sm btn-warning rounded-pill flex-grow-1 fw-bold disabled text-dark"><i class="fa-solid fa-spinner fa-spin me-1"></i> Publishing...</button>`;
+                    } else if (ev.status === 'FAILED') {
+                        statusBadge = `<span class="badge bg-danger text-white fw-bold px-2 py-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> Failed</span>`;
+                        actionBtn = `<button class="btn btn-sm btn-danger rounded-pill flex-grow-1 fw-bold" onclick="forcePost(${ev.id})"><i class="fa-solid fa-rotate me-1"></i> Retry Now</button>`;
+                    } else {
+                        statusBadge = `<span class="badge bg-info text-dark fw-bold px-2 py-1"><i class="fa-solid fa-clock me-1"></i> ${dtInfo.countdown}</span>`;
+                        actionBtn = `<button class="btn btn-sm btn-primary rounded-pill flex-grow-1 fw-bold" onclick="forcePost(${ev.id})"><i class="fa-solid fa-bolt me-1"></i> Post Right Now</button>`;
+                    }
+                    let errorHtml = ev.error_message ? `<div class="small text-danger fw-bold mt-1 text-truncate" title="${ev.error_message}"><i class="fa-solid fa-circle-exclamation me-1"></i>${ev.error_message}</div>` : '';
+
                     // Cover thumbnail
                     let previewFile = '';
                     if (ev.processed_path) {
@@ -1142,7 +1167,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                                     <!-- Badges & Status -->
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <div class="d-flex gap-1">${platBadge} ${typeBadge}</div>
-                                        <span class="badge bg-info text-dark fw-bold"><i class="fa-solid fa-clock me-1"></i>${dtInfo.countdown}</span>
+                                        ${statusBadge}
                                     </div>
 
                                     <!-- Media & Exact Time Box -->
@@ -1161,10 +1186,9 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                                     </div>
                                 </div>
 
+                                ${errorHtml}
                                 <div class="d-flex gap-2 mt-3 pt-2 border-top border-secondary">
-                                    <button class="btn btn-sm btn-success rounded-pill flex-grow-1 fw-bold" onclick="forcePost(${ev.id})">
-                                        <i class="fa-solid fa-bolt me-1"></i> Post Right Now
-                                    </button>
+                                    ${actionBtn}
                                     <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="deletePost(${ev.id})">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>

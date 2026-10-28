@@ -173,10 +173,14 @@ def format_post_datetime(iso_str: str) -> dict:
             "countdown": "Ready"
         }
     try:
-        clean = str(iso_str).replace("Z", "").split(".")[0]
-        if len(clean) == 16:
-            clean += ":00"
-        dt = datetime.fromisoformat(clean)
+        raw_str = str(iso_str).strip()
+        if raw_str.endswith("Z"):
+            dt = datetime.fromisoformat(raw_str.replace("Z", "+00:00")).astimezone()
+        else:
+            clean = raw_str.split(".")[0]
+            if len(clean) == 16:
+                clean += ":00"
+            dt = datetime.fromisoformat(clean)
         day_name = dt.strftime("%A")
         date_str = dt.strftime(f"{day_name}, %d %b %Y")
         time_str = dt.strftime("%I:%M %p")
@@ -206,16 +210,23 @@ def format_post_datetime(iso_str: str) -> dict:
 @app.route("/api/calendar")
 def api_calendar():
     current_db = get_db()
+    try:
+        from app.modules.scheduler import check_and_upload_due_posts
+        check_and_upload_due_posts(db=current_db)
+    except Exception as ce:
+        logger.warning(f"Error checking due posts in calendar: {ce}")
+
     posts = current_db.get_posts(limit=150) if current_db else []
-    scheduled = [p for p in posts if p.status in [PostStatus.SCHEDULED.value, PostStatus.QUEUED.value]]
-    scheduled.sort(key=lambda x: str(x.scheduled_time or x.created_at or ""))
-    result = []
-    for p in scheduled:
-        d = p.__dict__.copy()
-        d["dt_info"] = format_post_datetime(p.scheduled_time)
-        d["scheduled_countdown"] = d["dt_info"]["countdown"]
-        result.append(d)
-    return jsonify({"success": True, "events": result})
+    calendar_events = []
+    for p in posts:
+        if p.scheduled_time or p.status in [PostStatus.SCHEDULED.value, PostStatus.QUEUED.value, PostStatus.UPLOADING.value, PostStatus.UPLOADED.value, PostStatus.FAILED.value]:
+            d = p.__dict__.copy()
+            d["dt_info"] = format_post_datetime(p.scheduled_time or p.created_at)
+            d["scheduled_countdown"] = d["dt_info"]["countdown"]
+            calendar_events.append(d)
+
+    calendar_events.sort(key=lambda x: str(x.get("scheduled_time") or x.get("created_at") or ""), reverse=True)
+    return jsonify({"success": True, "events": calendar_events})
 
 @app.route("/api/audio/search")
 def api_audio_search():
@@ -454,12 +465,12 @@ def api_post_now(post_id):
     if not post:
         return jsonify({"success": False, "error": "Post not found"}), 404
 
-    def do_upload():
-        if scheduler:
-            scheduler._execute_upload(post)
-
-    threading.Thread(target=do_upload, daemon=True).start()
-    return jsonify({"success": True, "message": f"Upload triggered for post #{post_id}"})
+    from app.modules.scheduler import execute_post_upload
+    ok, rid, msg = execute_post_upload(post_id, db=current_db)
+    if ok:
+        return jsonify({"success": True, "message": f"Post #{post_id} published LIVE successfully!", "remote_id": rid})
+    else:
+        return jsonify({"success": False, "error": f"Upload failed: {msg}"}), 500
 
 @app.route("/api/posts/<int:post_id>/delete", methods=["POST"])
 def api_delete_post(post_id):
@@ -511,6 +522,7 @@ def api_upload():
         hashtags = request.form.get("hashtags", "").strip()
         schedule_mode = request.form.get("schedule_mode", "instant") # "instant", "calendar", "queue"
         scheduled_time = request.form.get("scheduled_time", "").strip()
+        scheduled_time_utc = request.form.get("scheduled_time_utc", "").strip()
         main_index = int(request.form.get("main_index", 0))
 
         # Reorder so chosen cover is at index 0
@@ -576,9 +588,9 @@ def api_upload():
             post_status = PostStatus.QUEUED.value
             post_sched_time = None
 
-            if schedule_mode == "calendar" and scheduled_time:
+            if schedule_mode == "calendar" and (scheduled_time_utc or scheduled_time):
                 post_status = PostStatus.SCHEDULED.value
-                post_sched_time = scheduled_time
+                post_sched_time = scheduled_time_utc or scheduled_time
             elif schedule_mode == "instant":
                 post_status = PostStatus.UPLOADING.value
             else:
@@ -605,11 +617,19 @@ def api_upload():
                     )
                     created_post_ids.append(post_id)
 
-                    # If Instant upload requested, trigger upload immediately!
+                    # If Instant upload requested or due immediately, execute upload!
+                    from app.modules.scheduler import execute_post_upload
                     if schedule_mode == "instant":
-                        post_record = current_db.get_post(post_id)
-                        if post_record and scheduler:
-                            threading.Thread(target=scheduler._execute_upload, args=(post_record,), daemon=True).start()
+                        ok, rid, emsg = execute_post_upload(post_id, db=current_db)
+                    elif schedule_mode == "calendar" and post_sched_time:
+                        try:
+                            clean_t = str(post_sched_time).replace("Z", "").split(".")[0]
+                            if len(clean_t) == 16:
+                                clean_t += ":00"
+                            if datetime.fromisoformat(clean_t) <= datetime.now() or datetime.fromisoformat(clean_t) <= datetime.utcnow():
+                                execute_post_upload(post_id, db=current_db)
+                        except Exception:
+                            pass
 
         msg = f"Post created for {platform.upper()} with {len(uploaded_files)} media item(s)!"
         if schedule_mode == "calendar":

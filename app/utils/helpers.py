@@ -74,8 +74,17 @@ def format_delay_time(dt_iso: Optional[str]) -> str:
     if not dt_iso:
         return "Not scheduled"
     try:
-        target = datetime.fromisoformat(dt_iso)
-        now = datetime.now()
+        raw_str = str(dt_iso).strip()
+        from datetime import timezone
+        if raw_str.endswith("Z"):
+            target = datetime.fromisoformat(raw_str.replace("Z", "+00:00"))
+            now = datetime.now(timezone.utc)
+        else:
+            clean = raw_str.split(".")[0]
+            if len(clean) == 16:
+                clean += ":00"
+            target = datetime.fromisoformat(clean)
+            now = datetime.now()
         diff = target - now
         total_seconds = int(diff.total_seconds())
         if total_seconds <= 0:
