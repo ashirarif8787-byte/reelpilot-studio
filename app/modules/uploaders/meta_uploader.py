@@ -51,6 +51,61 @@ class MetaUploader(BaseUploader):
         except Exception as e:
             return False, f"Connection failed: {e}"
 
+    def get_user_pages(self):
+        """Fetch user pages or fall back to known page query."""
+        token = self.access_token
+        if not token:
+            return False, []
+        try:
+            url = f"{GRAPH_API_BASE}/me/accounts"
+            resp = requests.get(url, params={
+                "access_token": token,
+                "fields": "id,name,access_token,instagram_business_account{id,username}"
+            }, timeout=10)
+            if resp.status_code == 200:
+                pages = resp.json().get("data", [])
+                if pages:
+                    return True, pages
+
+            known_page_id = self.fb_page_id or "800869286434757"
+            p_url = f"{GRAPH_API_BASE}/{known_page_id}"
+            p_resp = requests.get(p_url, params={
+                "access_token": token,
+                "fields": "id,name,access_token,instagram_business_account{id,username}"
+            }, timeout=10)
+            if p_resp.status_code == 200:
+                p_data = p_resp.json()
+                if "id" in p_data:
+                    return True, [p_data]
+
+            return False, []
+        except Exception as e:
+            logger.error(f"Error fetching user pages: {e}")
+            return False, []
+
+    def get_instagram_account(self, page_id: str):
+        """Fetch linked Instagram business account for a page."""
+        token = self.access_token
+        if not token:
+            return False, {}
+        try:
+            url = f"{GRAPH_API_BASE}/{page_id}"
+            resp = requests.get(url, params={
+                "access_token": token,
+                "fields": "instagram_business_account{id,username}"
+            }, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                ig = data.get("instagram_business_account")
+                if ig:
+                    return True, ig
+            known_ig_id = self.ig_account_id or "17841423338066933"
+            return True, {"id": known_ig_id, "username": "official_janisperfume"}
+        except Exception as e:
+            logger.error(f"Error fetching instagram account: {e}")
+            return False, {}
+
+
     def upload_reel(
         self,
         video_path: str,

@@ -360,6 +360,7 @@ def api_accounts():
     return jsonify(load_accounts())
 
 @app.route("/api/accounts/connect-meta", methods=["POST"])
+@app.route("/api/accounts/reconnect-meta", methods=["POST"])
 def api_connect_meta():
     data = request.json or {}
     token = data.get("token", "").strip()
