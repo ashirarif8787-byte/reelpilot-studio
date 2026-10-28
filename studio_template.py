@@ -1087,6 +1087,11 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                     clearAllSelectedMedia();
                     document.getElementById('post-caption-input').value = '';
                     document.getElementById('perfume-name-input').value = '';
+                    if (d.events && d.events.length > 0) {
+                        let cur = getStoredEvents();
+                        let merged = d.events.concat(cur.filter(c => !d.events.some(de => de.id === c.id)));
+                        setStoredEvents(merged);
+                    }
                     loadReelsFeed();
                     loadCalendarFeed();
                 } else {
@@ -1097,25 +1102,63 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             }
         }
 
-        // --- CALENDAR FEED WITH EXACT DAY, DATE, TIME & WAQT ---
+        // --- CALENDAR FEED WITH LOCALSTORAGE PERSISTENCE (NO DISAPPEARING/FLICKER) ---
+        function getStoredEvents() {
+            try {
+                return JSON.parse(localStorage.getItem('reelpilot_calendar_events') || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function setStoredEvents(events) {
+            try {
+                localStorage.setItem('reelpilot_calendar_events', JSON.stringify(events));
+            } catch (e) {}
+        }
+
         async function loadCalendarFeed() {
             const container = document.getElementById('calendar-feed-container');
+            let storedEvents = getStoredEvents();
+
             try {
                 const res = await fetch('/api/calendar');
                 const data = await res.json();
-                if (!data.success || !data.events || data.events.length === 0) {
-                    container.innerHTML = `
-                        <div class="col-12 text-center py-4 text-secondary">
-                            <i class="fa-solid fa-calendar-check fs-2 text-info opacity-50 mb-2"></i>
-                            <div class="fw-bold text-white">No Upcoming Scheduled Posts</div>
-                            <small>Use "Calendar Schedule" above to plan posts for exact future dates & times!</small>
-                        </div>
-                    `;
-                    return;
+                if (data.success && data.events && data.events.length > 0) {
+                    const serverIds = new Set(data.events.map(e => e.id));
+                    let merged = data.events.slice();
+                    storedEvents.forEach(se => {
+                        if (!serverIds.has(se.id) && (se.status === 'SCHEDULED' || se.status === 'UPLOADING' || se.status === 'FAILED')) {
+                            merged.push(se);
+                        }
+                    });
+                    storedEvents = merged;
+                    setStoredEvents(storedEvents);
+                } else if (storedEvents.length > 0) {
+                    // Cold start instance on Vercel: restore cached events in background
+                    fetch('/api/calendar/restore', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ events: storedEvents })
+                    }).catch(() => {});
                 }
+            } catch (e) {
+                console.warn("Calendar fetch warning, using stored events:", e);
+            }
 
-                let html = '';
-                data.events.forEach(ev => {
+            if (!storedEvents || storedEvents.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-4 text-secondary">
+                        <i class="fa-solid fa-calendar-check fs-2 text-info opacity-50 mb-2"></i>
+                        <div class="fw-bold text-white">No Upcoming Scheduled Posts</div>
+                        <small>Use "Calendar Schedule" above to plan posts for exact future dates & times!</small>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            storedEvents.forEach(ev => {
                     const isCarousel = ev.media_type === 'carousel';
                     const plat = ev.target_platform || 'instagram';
                     let platBadge = '<span class="badge" style="background: var(--insta-grad);">INSTAGRAM</span>';
@@ -1355,6 +1398,8 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
         async function deletePost(id) {
             if (!confirm("Are you sure you want to delete this post?")) return;
             try {
+                let cur = getStoredEvents().filter(e => e.id !== id);
+                setStoredEvents(cur);
                 await fetch(`/api/posts/${id}/delete`, { method: 'POST' });
                 showToast("Post deleted");
                 loadReelsFeed();

@@ -480,6 +480,47 @@ def api_delete_post(post_id):
     success = current_db.delete_post(post_id) if current_db else False
     return jsonify({"success": success})
 
+@app.route("/api/calendar/restore", methods=["POST"])
+def api_calendar_restore():
+    """Restores cached posts from browser localStorage into current serverless container's SQLite."""
+    data = request.json or {}
+    cached_events = data.get("events", [])
+    current_db = get_db()
+    if not current_db or not cached_events:
+        return jsonify({"success": False, "count": 0})
+
+    restored_count = 0
+    existing_posts = current_db.get_posts(limit=200)
+    existing_ids = {p.id for p in existing_posts}
+
+    for ev in cached_events:
+        eid = ev.get("id")
+        if eid and eid not in existing_ids:
+            try:
+                p_platform = ev.get("target_platform", "instagram")
+                current_db.insert_post(
+                    file_path=ev.get("file_path", ""),
+                    file_hash=ev.get("file_hash", f"restored_{eid}_{p_platform}_{int(time.time()*1000)}"),
+                    target_platform=p_platform,
+                    media_type=ev.get("media_type", "image"),
+                    status=ev.get("status", PostStatus.SCHEDULED.value)
+                )
+                current_db.update_post(
+                    post_id=eid,
+                    caption=ev.get("caption", ""),
+                    hashtags=ev.get("hashtags", ""),
+                    scheduled_time=ev.get("scheduled_time"),
+                    status=ev.get("status", PostStatus.SCHEDULED.value),
+                    remote_media_id=ev.get("remote_media_id"),
+                    remote_url=ev.get("remote_url"),
+                    error_message=ev.get("error_message")
+                )
+                restored_count += 1
+            except Exception as ex:
+                logger.warning(f"Error restoring post #{eid}: {ex}")
+
+    return jsonify({"success": True, "restored_count": restored_count})
+
 @app.route("/api/settings", methods=["GET", "POST"])
 def api_settings():
     if request.method == "POST":
@@ -611,7 +652,8 @@ def api_upload():
             final_hashtags = hashtags or "#JanisPerfume #Luxury #Fragrance #Trending"
 
             if current_db:
-                f_hash = current_db.calculate_file_hash(first_path)
+                base_hash = current_db.calculate_file_hash(first_path)
+                f_hash = f"{base_hash}_{p}_{int(time.time()*1000)}"
                 post_id = current_db.insert_post(
                     file_path=stored_file_path,
                     file_hash=f_hash,
@@ -639,13 +681,23 @@ def api_upload():
                         except Exception:
                             pass
 
+        created_events = []
+        if current_db:
+            for pid in created_post_ids:
+                p_rec = current_db.get_post(pid)
+                if p_rec:
+                    d = p_rec.__dict__.copy()
+                    d["dt_info"] = format_post_datetime(p_rec.scheduled_time or p_rec.created_at)
+                    d["scheduled_countdown"] = d["dt_info"]["countdown"]
+                    created_events.append(d)
+
         msg = f"Post created for {platform.upper()} with {len(uploaded_files)} media item(s)!"
         if schedule_mode == "calendar":
             msg += f" Scheduled for {scheduled_time}."
         elif schedule_mode == "instant":
             msg += " Instant live upload initiated!"
 
-        return jsonify({"success": True, "post_ids": created_post_ids, "message": msg})
+        return jsonify({"success": True, "post_ids": created_post_ids, "events": created_events, "message": msg})
     except Exception as e:
         logger.error(f"[api_upload] Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
