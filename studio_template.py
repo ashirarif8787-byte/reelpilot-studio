@@ -1241,7 +1241,6 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                     `;
                 });
                 container.innerHTML = html;
-            } catch (e) {}
         }
 
         // --- REELS FEED & STATUS ---
