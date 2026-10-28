@@ -77,11 +77,14 @@ class DatabaseManager:
 
     @staticmethod
     def calculate_file_hash(file_path: str) -> str:
-        """Computes SHA-256 hash of a file to detect duplicates."""
+        """Computes SHA-256 hash of a file or URL string to detect duplicates."""
         hasher = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            while chunk := f.read(65536):
-                hasher.update(chunk)
+        if os.path.exists(file_path):
+            with open(file_path, "rb") as f:
+                while chunk := f.read(65536):
+                    hasher.update(chunk)
+        else:
+            hasher.update(str(file_path).encode("utf-8"))
         return hasher.hexdigest()
 
     def is_duplicate(self, file_hash: str) -> bool:
