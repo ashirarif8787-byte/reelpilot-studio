@@ -26,6 +26,8 @@ class AppConfig:
     meta_access_token: str = ""
     instagram_account_id: str = ""
     facebook_page_id: str = ""
+    meta_app_id: str = ""
+    meta_app_secret: str = ""
     
     tiktok_client_key: str = ""
     tiktok_client_secret: str = ""
