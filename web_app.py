@@ -166,6 +166,45 @@ def api_posts():
         result.append(d)
     return jsonify(result)
 
+def format_post_datetime(iso_str: str) -> dict:
+    if not iso_str:
+        return {
+            "exact_date": "Immediate",
+            "exact_time": "Now",
+            "waqt": "Foran",
+            "countdown": "Ready"
+        }
+    try:
+        clean = str(iso_str).replace("Z", "").split(".")[0]
+        if len(clean) == 16:
+            clean += ":00"
+        dt = datetime.fromisoformat(clean)
+        day_name = dt.strftime("%A")
+        date_str = dt.strftime(f"{day_name}, %d %b %Y")
+        time_str = dt.strftime("%I:%M %p")
+        h = dt.hour
+        if 5 <= h < 12:
+            waqt = "Subah (Morning)"
+        elif 12 <= h < 17:
+            waqt = "Dopahar (Afternoon)"
+        elif 17 <= h < 21:
+            waqt = "Sham (Evening)"
+        else:
+            waqt = "Raat (Night)"
+        return {
+            "exact_date": date_str,
+            "exact_time": time_str,
+            "waqt": waqt,
+            "countdown": format_delay_time(iso_str)
+        }
+    except Exception:
+        return {
+            "exact_date": str(iso_str),
+            "exact_time": "",
+            "waqt": "",
+            "countdown": "Scheduled"
+        }
+
 @app.route("/api/calendar")
 def api_calendar():
     current_db = get_db()
@@ -175,7 +214,8 @@ def api_calendar():
     result = []
     for p in scheduled:
         d = p.__dict__.copy()
-        d["scheduled_countdown"] = format_delay_time(p.scheduled_time) if p.scheduled_time else "Queued"
+        d["dt_info"] = format_post_datetime(p.scheduled_time)
+        d["scheduled_countdown"] = d["dt_info"]["countdown"]
         result.append(d)
     return jsonify({"success": True, "events": result})
 
@@ -229,6 +269,91 @@ def api_ai_analyze_media():
                 os.remove(temp_path)
             except Exception:
                 pass
+
+@app.route("/api/accounts/health")
+def api_accounts_health():
+    cfg = config_manager.config
+    token = (cfg.meta_access_token or "").strip()
+    if not token:
+        return jsonify({
+            "connected": False,
+            "status": "NOT_CONNECTED",
+            "message": "No Meta Access Token configured. Paste your token to connect.",
+            "facebook": {"connected": False, "name": "Not Connected", "id": ""},
+            "instagram": {"connected": False, "username": "Not Connected", "id": ""}
+        })
+
+    try:
+        url = f"https://graph.facebook.com/v19.0/me?access_token={token}&fields=id,name"
+        r = requests.get(url, timeout=6)
+        data = r.json()
+        if "error" in data:
+            err = data["error"]
+            err_msg = err.get("message", "Token validation failed")
+            code = err.get("code")
+            subcode = err.get("error_subcode", 0)
+            is_expired = (code == 190 or subcode == 463)
+            return jsonify({
+                "connected": False,
+                "status": "EXPIRED" if is_expired else "ERROR",
+                "message": f"Meta Session Expired: {err_msg}" if is_expired else f"Meta Error: {err_msg}",
+                "error_code": code,
+                "subcode": subcode,
+                "facebook": {"connected": False, "name": cfg.brand_name, "id": cfg.facebook_page_id},
+                "instagram": {"connected": False, "username": "official_janisperfume", "id": cfg.instagram_account_id}
+            })
+
+        user_name = data.get("name", "User")
+        return jsonify({
+            "connected": True,
+            "status": "ACTIVE",
+            "user_name": user_name,
+            "message": f"Connected & Verified Live with Meta ({user_name})!",
+            "facebook": {
+                "connected": bool(cfg.facebook_page_id),
+                "name": cfg.brand_name or "JANI\'s Perfume",
+                "id": cfg.facebook_page_id or "800869286434757"
+            },
+            "instagram": {
+                "connected": bool(cfg.instagram_account_id),
+                "username": "official_janisperfume",
+                "id": cfg.instagram_account_id or "17841423338066933"
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "connected": False,
+            "status": "NETWORK_ERROR",
+            "message": f"Network check error: {e}",
+            "facebook": {"connected": False, "name": cfg.brand_name, "id": cfg.facebook_page_id},
+            "instagram": {"connected": False, "username": "official_janisperfume", "id": cfg.instagram_account_id}
+        })
+
+@app.route("/api/ai/generate-luxury-copy", methods=["POST"])
+def api_ai_generate_luxury_copy():
+    data = request.json or {}
+    product_name = data.get("product_name", "")
+    volume_ml = data.get("volume_ml", "100ml")
+    scent_notes = data.get("scent_notes", "")
+    price_offer = data.get("price_offer", "")
+    platform = data.get("platform", "instagram")
+
+    try:
+        cap, tags, vibe = caption_generator.generate_perfume_copy(
+            product_name=product_name,
+            volume_ml=volume_ml,
+            scent_notes=scent_notes,
+            price_offer=price_offer,
+            platform=platform
+        )
+        return jsonify({
+            "success": True,
+            "caption": cap,
+            "hashtags": tags,
+            "sound_vibe": vibe
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/accounts")
 def api_accounts():

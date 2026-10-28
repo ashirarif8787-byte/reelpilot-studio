@@ -241,8 +241,19 @@ class SocialScheduler:
             if self._stop_event.is_set() or self._is_paused:
                 break
 
-            if not post.scheduled_time or post.scheduled_time > now_iso:
+            if not post.scheduled_time:
                 continue
+
+            try:
+                sched_str = str(post.scheduled_time).replace("Z", "").split(".")[0]
+                if len(sched_str) == 16:
+                    sched_str += ":00"
+                target_dt = datetime.fromisoformat(sched_str)
+                if target_dt > datetime.now():
+                    continue
+            except Exception:
+                if str(post.scheduled_time) > now_iso:
+                    continue
 
             # Check daily upload limit
             if post.target_platform == Platform.INSTAGRAM.value:

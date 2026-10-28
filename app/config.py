@@ -46,7 +46,7 @@ class AppConfig:
     daily_limit_facebook: int = 3
     min_delay_minutes: int = 120  # 2 hours
     max_delay_minutes: int = 240  # 4 hours
-    scheduler_check_interval_seconds: int = 15
+    scheduler_check_interval_seconds: int = 5
 
     # Media Processing
     image_duration_seconds: int = 8  # 7-10s short video / Reel

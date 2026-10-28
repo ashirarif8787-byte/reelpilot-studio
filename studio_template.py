@@ -3,7 +3,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReelPilot Studio v3.6 - Multi-Media Automation & Worldwide Music Hub</title>
+    <title>ReelPilot Studio v3.6 - Luxury Fragrance Automation & Multi-Media Hub</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -18,9 +18,9 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --insta-grad: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
-            --tiktok-grad: linear-gradient(45deg, #00f2fe 0%, #4facfe 100%);
             --fb-color: #1877f2;
             --gemini-grad: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #9333ea 100%);
+            --gold-grad: linear-gradient(135deg, #b45309 0%, #f59e0b 50%, #fbbf24 100%);
         }
 
         body {
@@ -49,6 +49,25 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
         }
 
+        /* Live Health Banner */
+        .health-banner-connected {
+            background: linear-gradient(135deg, rgba(6, 78, 59, 0.8) 0%, rgba(16, 185, 129, 0.15) 100%);
+            border: 2px solid #10b981;
+            border-radius: 16px;
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);
+        }
+        .health-banner-disconnected {
+            background: linear-gradient(135deg, rgba(127, 29, 29, 0.85) 0%, rgba(220, 38, 38, 0.2) 100%);
+            border: 2px solid #ef4444;
+            border-radius: 16px;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.25);
+            animation: pulse-border 2s infinite;
+        }
+        @keyframes pulse-border {
+            0%, 100% { border-color: #ef4444; }
+            50% { border-color: #f87171; box-shadow: 0 0 35px rgba(239, 68, 68, 0.4); }
+        }
+
         .account-chip {
             display: inline-flex;
             align-items: center;
@@ -69,7 +88,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             border: 2px dashed #6366f1;
             border-radius: 20px;
             background: rgba(99, 102, 241, 0.05);
-            padding: 35px 20px;
+            padding: 30px 20px;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -90,7 +109,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
         }
         .media-preview-card.is-cover {
             border-color: #f59e0b;
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.35);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
         }
         .media-preview-card img, .media-preview-card video {
             width: 100%;
@@ -132,6 +151,38 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             justify-content: space-between;
             align-items: center;
             z-index: 2;
+        }
+
+        .timing-btn {
+            border: 1px solid var(--card-border);
+            background: #0c1424;
+            color: #cbd5e1;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-align: center;
+        }
+        .timing-btn.active, .timing-btn:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.15);
+            color: #fff;
+        }
+
+        .form-control, .form-select {
+            background: #0c1424;
+            border: 1px solid var(--card-border);
+            color: #fff;
+            border-radius: 12px;
+            padding: 10px 14px;
+        }
+        .form-control:focus, .form-select:focus {
+            background: #0c1424;
+            border-color: #6366f1;
+            color: #fff;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
         }
 
         .reel-card {
@@ -182,38 +233,6 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             backdrop-filter: blur(4px);
         }
 
-        .form-control, .form-select {
-            background: #0c1424;
-            border: 1px solid var(--card-border);
-            color: #fff;
-            border-radius: 12px;
-            padding: 10px 14px;
-        }
-        .form-control:focus, .form-select:focus {
-            background: #0c1424;
-            border-color: #6366f1;
-            color: #fff;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
-        }
-
-        .timing-btn {
-            border: 1px solid var(--card-border);
-            background: #0c1424;
-            color: #cbd5e1;
-            border-radius: 12px;
-            padding: 10px 14px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-            cursor: pointer;
-            text-align: center;
-        }
-        .timing-btn.active, .timing-btn:hover {
-            border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.15);
-            color: #fff;
-        }
-
         .feed-filter-btn {
             border-radius: 20px;
             padding: 6px 16px;
@@ -228,6 +247,23 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             background: #6366f1;
             border-color: #6366f1;
             color: #fff;
+        }
+
+        .quick-ml-badge {
+            cursor: pointer;
+            border: 1px solid #475569;
+            background: #1e293b;
+            color: #f8fafc;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.78rem;
+            transition: all 0.15s;
+        }
+        .quick-ml-badge:hover, .quick-ml-badge.active {
+            background: #f59e0b;
+            color: #000;
+            border-color: #f59e0b;
+            font-weight: bold;
         }
 
         #toast-container {
@@ -247,59 +283,65 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                     <i class="fa-solid fa-wand-magic-sparkles text-primary me-2"></i>ReelPilot Studio
                 </span>
                 <span class="badge text-white rounded-pill px-3 py-1 fw-bold d-none d-md-inline" style="background: var(--gemini-grad); font-size: 0.72rem;">
-                    <i class="fa-solid fa-bolt me-1"></i> Dual-AI + Multi-Media v3.6
+                    <i class="fa-solid fa-crown me-1"></i> Luxury Perfume Engine v3.6
                 </span>
             </div>
 
             <div class="d-flex align-items-center gap-2">
-                <!-- Instagram -->
-                <div class="account-chip" onclick="openLoginModal('instagram')" style="cursor: pointer;">
-                    <i class="fa-brands fa-instagram text-danger"></i>
-                    <span id="chip-insta" class="fw-bold">@official_janisperfume</span>
-                    <span class="badge bg-success rounded-pill" style="font-size: 0.65rem;">Live</span>
-                </div>
-                <!-- Facebook -->
-                <div class="account-chip" onclick="openLoginModal('facebook')" style="cursor: pointer;">
-                    <i class="fa-brands fa-facebook text-primary"></i>
-                    <span id="chip-fb" class="fw-bold">JANI's Perfume</span>
-                    <span class="badge bg-success rounded-pill" style="font-size: 0.65rem;">Live</span>
+                <!-- Live Connection Indicator Chip -->
+                <div id="nav-live-indicator" class="account-chip">
+                    <i class="fa-solid fa-circle text-secondary" id="nav-status-dot"></i>
+                    <span id="nav-status-text" class="fw-bold">Checking Connection...</span>
                 </div>
 
                 <button class="btn btn-outline-light rounded-pill px-3 py-2 btn-sm fw-bold ms-1" onclick="openSettingsModal()">
-                    <i class="fa-solid fa-sliders text-warning me-1"></i> Settings & Storage
+                    <i class="fa-solid fa-sliders text-warning me-1"></i> Settings
                 </button>
             </div>
         </div>
     </nav>
 
     <div class="container-fluid px-4 py-4">
-        <!-- HERO STATUS BANNER -->
-        <div class="card card-pro p-3 mb-4">
+        <!-- PROMINENT LIVE CONNECTION STATUS BANNER -->
+        <div id="live-connection-banner" class="p-3 mb-4 card-pro">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="p-3 rounded-circle text-white fs-4" style="background: var(--gemini-grad);">
-                        <i class="fa-solid fa-camera-retro"></i>
+                    <div id="banner-icon-box" class="p-3 rounded-circle text-white fs-3 bg-secondary">
+                        <i class="fa-solid fa-spinner fa-spin"></i>
                     </div>
                     <div>
-                        <div class="fw-bold fs-6 text-white d-flex align-items-center gap-2">
-                            <span>1-12 Multi-Image Albums & Native Media Engine:</span>
-                            <span class="badge bg-success rounded-pill px-3 py-1">No Video Conversion For Photos</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 id="banner-status-title" class="fw-bold mb-0 text-white">Checking Meta Live Connection...</h5>
+                            <span id="banner-status-badge" class="badge bg-secondary rounded-pill">Verifying</span>
                         </div>
-                        <div class="text-white small mt-1" style="opacity: 0.9;">
-                            Active Brand: <strong id="hero-brand-name" class="text-warning">JANI's Perfume</strong>.
-                            Upload 1 to 12 pictures to publish native multi-photo Facebook albums and Instagram Carousels. Choose your Main Cover image, pick worldwide background music, or schedule for future dates!
+                        <div id="banner-status-desc" class="small text-white-50 mt-1">
+                            Testing connection live with Meta Graph API for Instagram & Facebook Page...
                         </div>
                     </div>
                 </div>
 
-                <div class="d-flex align-items-center gap-3 bg-dark bg-opacity-50 p-2 px-3 rounded-4 border border-secondary">
-                    <div class="text-end">
-                        <div class="fw-bold text-white small">Auto-Pilot Engine</div>
-                        <small class="text-muted" id="autopilot-mode-label">Anti-Spam 2-3h Delay</small>
+                <div id="banner-action-box" class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" onclick="checkLiveHealth(true)">
+                        <i class="fa-solid fa-rotate me-1"></i> Refresh Status
+                    </button>
+                </div>
+            </div>
+
+            <!-- Inline Token Reconnect Box (Visible when Disconnected / Expired) -->
+            <div id="inline-reconnect-box" class="mt-3 pt-3 border-top border-danger border-opacity-50 d-none">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-9">
+                        <input type="password" id="banner-token-input" class="form-control" placeholder="Paste your fresh Meta Access Token (EAAB...) here to reconnect immediately...">
                     </div>
-                    <div class="form-check form-switch fs-4 mb-0">
-                        <input class="form-check-input" type="checkbox" id="switch-autopilot-main" checked onchange="toggleAutoPilot(this)">
+                    <div class="col-md-3">
+                        <button class="btn btn-danger w-100 fw-bold rounded-pill" onclick="reconnectMetaFromBanner()">
+                            <i class="fa-solid fa-link me-1"></i> Reconnect Now
+                        </button>
                     </div>
+                </div>
+                <div class="small text-white-50 mt-2">
+                    <i class="fa-solid fa-circle-info text-info me-1"></i>
+                    Get your fresh token from <a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="text-info fw-bold text-decoration-underline">Meta Graph API Explorer</a> with permissions <code>pages_manage_posts</code>, <code>pages_read_engagement</code>, and <code>instagram_content_publish</code>.
                 </div>
             </div>
         </div>
@@ -339,10 +381,10 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                         </div>
                     </div>
 
-                    <!-- Multi-Image Drop Zone -->
+                    <!-- Multi-Image Drop Zone (1 to 12 Pictures) -->
                     <div class="drop-zone-main mb-3" onclick="document.getElementById('file-post-input').click()">
                         <i class="fa-solid fa-cloud-arrow-up fs-2 text-primary mb-2"></i>
-                        <h5 class="fw-bold text-white mb-1">Click to Browse or Drag & Drop 1 to 12 Pictures / Videos</h5>
+                        <h5 class="fw-bold text-white mb-1">Click to Browse or Drag & Drop 1 to 12 Pictures</h5>
                         <p class="text-white small mb-0" style="opacity: 0.85;">
                             Multi-photos will be published as native Carousels / Albums. Pure images stay pure images!
                         </p>
@@ -353,32 +395,63 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                     <div id="media-grid-container" class="mb-3 d-none">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <label class="form-label small fw-bold text-warning mb-0">
-                                <i class="fa-solid fa-layer-group me-1"></i> Media Album Items (Click ★ to choose Main Cover)
+                                <i class="fa-solid fa-layer-group me-1"></i> Media Album Items (Click ★ on any picture to make it Main Cover)
                             </label>
                             <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 small" onclick="clearAllSelectedMedia()">Clear All</button>
                         </div>
                         <div id="selected-media-grid" class="row g-2"></div>
                     </div>
 
-                    <!-- Worldwide Music Attachment Pill -->
-                    <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary mb-3 d-flex justify-content-between align-items-center">
-                        <div class="d-flex align-items-center gap-3">
-                            <div id="attached-music-art" class="rounded bg-secondary d-flex align-items-center justify-content-center text-white" style="width: 44px; height: 44px; overflow: hidden;">
-                                <i class="fa-solid fa-music"></i>
+                    <!-- DEDICATED PERFUME & PRODUCT SPECIFICATIONS CARD -->
+                    <div class="p-3 bg-dark bg-opacity-75 rounded-3 border border-warning border-opacity-50 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="fw-bold text-warning small d-flex align-items-center gap-1">
+                                <i class="fa-solid fa-crown text-warning"></i>
+                                <span>Perfume Details (Aapke Perfume ki Specifics)</span>
                             </div>
-                            <div>
-                                <div id="attached-music-title" class="fw-bold text-white small">No Audio Attached (Optional)</div>
-                                <div id="attached-music-subtitle" class="text-secondary small">Pick from 100M+ global songs with custom trim</div>
+                            <span class="badge bg-warning text-dark fw-bold" style="font-size: 0.65rem;">100% Authentic AI Copy</span>
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <!-- Perfume Name -->
+                            <div class="col-md-7">
+                                <label class="small text-white-50 mb-1">Perfume Name (Naam)</label>
+                                <input type="text" id="perfume-name-input" class="form-control" placeholder="e.g. Oud Royale, Velvet Rose, Janis Signature...">
+                            </div>
+                            <!-- Bottle Volume (ML) -->
+                            <div class="col-md-5">
+                                <label class="small text-white-50 mb-1">Bottle Size / Volume (ML)</label>
+                                <input type="text" id="perfume-volume-input" class="form-control" placeholder="e.g. 100ml" value="100ml">
                             </div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 fw-bold" onclick="openMusicModal()">
-                                <i class="fa-solid fa-magnifying-glass me-1"></i> Global Music Hub
-                            </button>
-                            <button type="button" id="btn-remove-music" class="btn btn-sm btn-outline-danger rounded-pill px-2 d-none" onclick="removeAttachedMusic()" title="Remove music">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
+
+                        <!-- Quick ML Selection Pills -->
+                        <div class="d-flex gap-2 mb-2">
+                            <span class="small text-white-50 me-1 align-self-center">Quick ML:</span>
+                            <span class="quick-ml-badge active" onclick="setQuickML('100ml', this)">100ml</span>
+                            <span class="quick-ml-badge" onclick="setQuickML('50ml', this)">50ml</span>
+                            <span class="quick-ml-badge" onclick="setQuickML('30ml', this)">30ml</span>
+                            <span class="quick-ml-badge" onclick="setQuickML('12ml Attar', this)">12ml Attar</span>
+                            <span class="quick-ml-badge" onclick="setQuickML('6ml Attar', this)">6ml Attar</span>
                         </div>
+
+                        <div class="row g-2 mb-2">
+                            <!-- Scent Notes -->
+                            <div class="col-md-6">
+                                <label class="small text-white-50 mb-1">Fragrance Notes / Accords (Optional)</label>
+                                <input type="text" id="perfume-notes-input" class="form-control" placeholder="e.g. Woody Oud, Amber, Vanilla, Rose...">
+                            </div>
+                            <!-- Price / Special Offer -->
+                            <div class="col-md-6">
+                                <label class="small text-white-50 mb-1">Price / Special Promotion (Optional)</label>
+                                <input type="text" id="perfume-offer-input" class="form-control" placeholder="e.g. PKR 3,999 with Free Nationwide Delivery">
+                            </div>
+                        </div>
+
+                        <!-- Single-Click Generate Button -->
+                        <button type="button" class="btn btn-warning w-100 py-2 fw-bold text-dark rounded-pill mt-2 shadow-sm" onclick="generateLuxuryPerfumeCopy()">
+                            <i class="fa-solid fa-wand-magic-sparkles me-2"></i>Generate 100% Authentic AI Luxury Description & Viral Hashtags
+                        </button>
                     </div>
 
                     <!-- Post Timing & Calendar Scheduling -->
@@ -405,34 +478,32 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                         <!-- Calendar DateTime Picker -->
                         <div id="calendar-picker-box" class="p-3 bg-dark bg-opacity-50 rounded-3 border border-info mb-2 d-none">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="small fw-bold text-info"><i class="fa-solid fa-clock me-1"></i> Select Date & Time for Scheduled Publishing:</label>
+                                <label class="small fw-bold text-info"><i class="fa-solid fa-clock me-1"></i> Select Exact Date & Time for Scheduled Publishing:</label>
                                 <span class="badge bg-info text-dark fw-bold">Live Meta Auto-Schedule</span>
                             </div>
                             <input type="datetime-local" id="custom-schedule-datetime" class="form-control form-control-lg mb-2">
+                            
                             <!-- Quick Presets -->
                             <div class="d-flex flex-wrap gap-1">
                                 <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setQuickTime(30)">+30 Mins</button>
                                 <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setQuickTime(60)">+1 Hour</button>
                                 <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setQuickTime(180)">+3 Hours</button>
-                                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setTomorrowTime(10)">Tomorrow 10:00 AM</button>
-                                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setTomorrowTime(20)">Tomorrow 8:00 PM</button>
+                                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setTomorrowTime(10)">Tomorrow 10:00 AM (Subah)</button>
+                                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setTomorrowTime(14)">Tomorrow 02:00 PM (Dopahar)</button>
+                                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setTomorrowTime(18)">Tomorrow 06:00 PM (Sham)</button>
+                                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setTomorrowTime(21)">Tomorrow 09:00 PM (Raat)</button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Custom Caption & Hashtags -->
                     <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label small fw-bold text-white mb-0">Caption & AI Vision Hook</label>
-                            <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-2 py-0 fw-bold" onclick="generateAICaptionForMedia()">
-                                <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Generate with AI
-                            </button>
-                        </div>
-                        <textarea id="post-caption-input" class="form-control" rows="2" placeholder="Write custom caption or leave blank for automatic AI Vision generation..."></textarea>
+                        <label class="form-label small fw-bold text-white mb-1">Generated Luxury Post Description (Review or Edit)</label>
+                        <textarea id="post-caption-input" class="form-control" rows="4" placeholder="Your luxury sales copy will appear here..."></textarea>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label small fw-bold text-white mb-1">Hashtags</label>
+                        <label class="form-label small fw-bold text-white mb-1">Viral Perfume Hashtags</label>
                         <input type="text" id="post-hashtags-input" class="form-control" placeholder="#JanisPerfume #LuxuryFragrance #Trending">
                     </div>
 
@@ -508,7 +579,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                         <i class="fa-solid fa-calendar-days text-info me-2"></i>Visual Content Calendar & Scheduled Timeline
                     </h4>
                     <p class="text-white small mb-0" style="opacity: 0.85;">
-                        View upcoming scheduled posts organized chronologically. Posts execute automatically at the exact chosen date and time.
+                        Har scheduled post ka exact <strong>Date</strong>, <strong>Day</strong>, <strong>Time</strong> aur <strong>Waqt (Subah/Dopahar/Sham/Raat)</strong> yahan show hota hai.
                     </p>
                 </div>
                 <button class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" onclick="loadCalendarFeed()">
@@ -555,63 +626,6 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- WORLDWIDE MUSIC SEARCH & TRIMMER MODAL -->
-    <div class="modal fade" id="modalWorldwideMusic" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content bg-dark text-white border border-secondary rounded-4 shadow-lg">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title fw-bold text-white">
-                        <i class="fa-solid fa-music text-info me-2"></i>Worldwide Music Engine & Audio Trimmer
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <p class="text-secondary small mb-3">
-                        Search across 100M+ songs worldwide (Bollywood, Pakistani, Hollywood, Arabic, Trending). Listen to the live stream preview and pick your trim offset (15s, 30s, 60s).
-                    </p>
-
-                    <!-- Search Input -->
-                    <div class="input-group mb-3">
-                        <span class="input-group-text bg-dark border-secondary text-info"><i class="fa-solid fa-magnifying-glass"></i></span>
-                        <input type="text" id="music-search-query" class="form-control" placeholder="Search song name or artist (e.g. Atif Aslam, The Weeknd, Kesariya, Drake...)" onkeydown="if(event.key==='Enter') executeMusicSearch()">
-                        <button class="btn btn-primary fw-bold px-4" type="button" onclick="executeMusicSearch()">
-                            Search Songs
-                        </button>
-                    </div>
-
-                    <!-- Audio Trimmer Options -->
-                    <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary mb-3">
-                        <div class="row g-2 align-items-center">
-                            <div class="col-md-6">
-                                <label class="small fw-bold text-warning mb-1 d-flex justify-content-between">
-                                    <span><i class="fa-solid fa-sliders me-1"></i> Start Offset (Trim Start):</span>
-                                    <span id="label-trim-start" class="badge bg-warning text-dark">0s</span>
-                                </label>
-                                <input type="range" class="form-range" id="slider-trim-start" min="0" max="30" value="0" oninput="document.getElementById('label-trim-start').innerText = this.value + 's'">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="small fw-bold text-info mb-1"><i class="fa-solid fa-stopwatch me-1"></i> Duration Length:</label>
-                                <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-sm btn-outline-info active flex-grow-1" id="btn-dur-15" onclick="setTrimDuration(15)">15s</button>
-                                    <button type="button" class="btn btn-sm btn-outline-info flex-grow-1" id="btn-dur-30" onclick="setTrimDuration(30)">30s</button>
-                                    <button type="button" class="btn btn-sm btn-outline-info flex-grow-1" id="btn-dur-60" onclick="setTrimDuration(60)">60s</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Search Results -->
-                    <div id="music-search-results" style="max-height: 380px; overflow-y: auto;">
-                        <div class="text-center py-4 text-secondary">
-                            <i class="fa-solid fa-headphones fs-3 mb-2 opacity-50"></i>
-                            <div>Type any artist or song title above and click Search!</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- SETTINGS & CLOUDFLARE R2 MODAL -->
     <div class="modal fade" id="modalStudioSettings" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -629,6 +643,19 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                             <i class="fa-solid fa-tag me-1"></i> Your Brand Name (Included in AI Captions & Prompts)
                         </label>
                         <input type="text" id="setting-brand-name" class="form-control" placeholder="e.g. JANI's Perfume">
+                    </div>
+
+                    <!-- Meta Access Token -->
+                    <h6 class="fw-bold text-white border-bottom border-secondary pb-2 mb-3">
+                        <i class="fa-brands fa-meta text-primary me-2"></i>Meta Graph Access Token (Instagram & Facebook)
+                    </h6>
+                    <div class="mb-4">
+                        <div class="input-group">
+                            <input type="password" id="setting-meta-token" class="form-control" placeholder="Paste EAAB... token here">
+                            <button class="btn btn-primary fw-bold px-3" type="button" onclick="verifyMetaToken()">
+                                <i class="fa-solid fa-link me-1"></i> Connect & Sync
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Cloudflare R2 Storage (Free 10GB S3 Compatible) -->
@@ -665,7 +692,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                     <h6 class="fw-bold text-white border-bottom border-secondary pb-2 mb-3">
                         <i class="fa-solid fa-brain text-info me-2"></i>Dual-AI Vision Configuration
                     </h6>
-                    <div class="row g-3 mb-4">
+                    <div class="row g-3 mb-2">
                         <div class="col-md-6">
                             <label class="small text-white fw-bold">
                                 <i class="fa-brands fa-google text-danger me-1"></i> Google Gemini API Key
@@ -681,40 +708,10 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                             <small class="text-secondary">GPT-4o Vision key from <a href="https://platform.openai.com" target="_blank" class="text-info">platform.openai.com</a></small>
                         </div>
                     </div>
-
-                    <!-- Meta Access Token -->
-                    <h6 class="fw-bold text-white border-bottom border-secondary pb-2 mb-3">
-                        <i class="fa-brands fa-meta text-primary me-2"></i>Meta Graph Access Token (Instagram & Facebook)
-                    </h6>
-                    <div class="mb-3">
-                        <div class="input-group">
-                            <input type="password" id="setting-meta-token" class="form-control" placeholder="Paste EAAB... token here">
-                            <button class="btn btn-primary fw-bold px-3" type="button" onclick="verifyMetaToken()">
-                                <i class="fa-solid fa-link me-1"></i> Connect & Sync
-                            </button>
-                        </div>
-                    </div>
                 </div>
                 <div class="modal-footer border-secondary">
                     <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold" onclick="saveSettings()">Save Changes</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- DIRECT LOGIN MODAL -->
-    <div class="modal fade" id="modalDirectLogin" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark text-white border border-secondary rounded-4 shadow-lg">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title fw-bold text-white"><i class="fa-solid fa-right-to-bracket text-primary me-2"></i>Direct Account Login</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4 text-center">
-                    <p class="text-white small mb-3">Paste your Meta Access Token to sync Instagram & Facebook:</p>
-                    <input type="password" id="login-meta-token" class="form-control mb-3" placeholder="EAAB... token">
-                    <button class="btn btn-primary w-100 rounded-pill py-2 fw-bold" onclick="directLoginMeta()">Sync Accounts</button>
                 </div>
             </div>
         </div>
@@ -745,30 +742,26 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
     <script>
         let settingsModal = null;
         let videoModal = null;
-        let loginModal = null;
-        let musicModal = null;
         let currentFeedFilter = "all";
         let allPostsData = [];
 
         // Multi-image selection state
-        let selectedMediaFiles = []; // Array of File objects
-        let coverIndex = 0;          // Index of chosen cover in selectedMediaFiles
-        let attachedAudio = null;     // { title, artist, preview_url, start_sec, duration_sec, artwork }
-        let currentScheduleMode = 'instant'; // 'instant', 'calendar', 'queue'
-        let currentTrimDuration = 30;
+        let selectedMediaFiles = [];
+        let coverIndex = 0;
+        let currentScheduleMode = 'instant';
 
         document.addEventListener("DOMContentLoaded", () => {
             settingsModal = new bootstrap.Modal(document.getElementById('modalStudioSettings'));
             videoModal = new bootstrap.Modal(document.getElementById('modalVideoPlayer'));
-            loginModal = new bootstrap.Modal(document.getElementById('modalDirectLogin'));
-            musicModal = new bootstrap.Modal(document.getElementById('modalWorldwideMusic'));
 
             document.getElementById('modalVideoPlayer').addEventListener('hidden.bs.modal', killVideoPlayback);
 
             loadInitialData();
+            checkLiveHealth();
+            setInterval(checkLiveHealth, 12000);
             setInterval(refreshStatus, 4000);
             setInterval(loadReelsFeed, 5000);
-            setInterval(loadCalendarFeed, 7000);
+            setInterval(loadCalendarFeed, 6000);
         });
 
         function showToast(msg, type = "success") {
@@ -781,6 +774,144 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             toast.innerHTML = `<i class="fa-solid fa-${type === "error" ? "circle-xmark" : (type === "warning" ? "circle-exclamation" : "circle-check")}"></i> <div>${msg}</div>`;
             container.appendChild(toast);
             setTimeout(() => { toast.remove(); }, 4000);
+        }
+
+        // --- LIVE HEALTH STATUS CHECK ---
+        async function checkLiveHealth(isUserTriggered = false) {
+            try {
+                const res = await fetch('/api/accounts/health');
+                const data = await res.json();
+
+                const banner = document.getElementById('live-connection-banner');
+                const title = document.getElementById('banner-status-title');
+                const badge = document.getElementById('banner-status-badge');
+                const desc = document.getElementById('banner-status-desc');
+                const iconBox = document.getElementById('banner-icon-box');
+                const inlineBox = document.getElementById('inline-reconnect-box');
+
+                const navDot = document.getElementById('nav-status-dot');
+                const navText = document.getElementById('nav-status-text');
+
+                if (data.connected && data.status === 'ACTIVE') {
+                    // CONNECTED
+                    banner.className = 'p-3 mb-4 card-pro health-banner-connected';
+                    title.innerHTML = `🟢 CONNECTED & VERIFIED LIVE`;
+                    title.className = 'fw-bold mb-0 text-success';
+                    badge.className = 'badge bg-success rounded-pill px-3 py-1';
+                    badge.innerText = 'Token Active';
+
+                    const fbName = data.facebook ? data.facebook.name : "JANI's Perfume";
+                    const igName = data.instagram ? data.instagram.username : "official_janisperfume";
+                    desc.innerHTML = `
+                        <strong>Facebook:</strong> <span class="text-white">${fbName}</span> | 
+                        <strong>Instagram:</strong> <span class="text-white">@${igName}</span> — 
+                        <span class="text-success fw-bold">Live Graph API ready to publish!</span>
+                    `;
+
+                    iconBox.className = 'p-3 rounded-circle text-white fs-3 bg-success';
+                    iconBox.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                    inlineBox.classList.add('d-none');
+
+                    navDot.className = 'fa-solid fa-circle text-success';
+                    navText.innerText = `@${igName} (Connected)`;
+                    if (isUserTriggered) showToast("Meta Connection Verified Live & Active!");
+                } else {
+                    // DISCONNECTED OR EXPIRED
+                    banner.className = 'p-3 mb-4 card-pro health-banner-disconnected';
+                    const isExpired = data.status === 'EXPIRED';
+                    title.innerHTML = isExpired ? `🔴 DISCONNECTED - Meta Session Expired` : `🔴 DISCONNECTED - Not Connected`;
+                    title.className = 'fw-bold mb-0 text-danger';
+                    badge.className = 'badge bg-danger rounded-pill px-3 py-1';
+                    badge.innerText = isExpired ? 'Expired' : 'Not Connected';
+
+                    desc.innerHTML = `
+                        <span class="text-warning fw-bold">${data.message || "Meta token missing or expired."}</span>
+                        <div class="mt-1">Is wajah se posts live publish nahi ho sakti thin. Naya token niche paste karein aur 1-click mein reconnect karein:</div>
+                    `;
+
+                    iconBox.className = 'p-3 rounded-circle text-white fs-3 bg-danger';
+                    iconBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                    inlineBox.classList.remove('d-none');
+
+                    navDot.className = 'fa-solid fa-circle text-danger';
+                    navText.innerText = `Meta Disconnected`;
+                    if (isUserTriggered) showToast("Meta token is expired or invalid!", "error");
+                }
+            } catch (e) {}
+        }
+
+        async function reconnectMetaFromBanner() {
+            const token = document.getElementById('banner-token-input').value.trim();
+            if (!token) {
+                showToast("Please paste your Meta Access Token first!", "warning");
+                return;
+            }
+            showToast("Verifying & connecting Meta token...", "warning");
+            try {
+                const res = await fetch('/api/accounts/connect-meta', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ token: token })
+                });
+                const d = await res.json();
+                if (d.success) {
+                    showToast(d.message || "Connected successfully!");
+                    document.getElementById('banner-token-input').value = '';
+                    checkLiveHealth();
+                } else {
+                    showToast("Error: " + (d.error || "Failed to connect"), "error");
+                }
+            } catch (e) {
+                showToast("Connection error: " + e, "error");
+            }
+        }
+
+        // --- QUICK ML BADGE HELPER ---
+        function setQuickML(val, el) {
+            document.getElementById('perfume-volume-input').value = val;
+            document.querySelectorAll('.quick-ml-badge').forEach(b => b.classList.remove('active'));
+            if (el) el.classList.add('active');
+        }
+
+        // --- LUXURY PERFUME COPY GENERATOR ---
+        async function generateLuxuryPerfumeCopy() {
+            const prodName = document.getElementById('perfume-name-input').value.trim();
+            const vol = document.getElementById('perfume-volume-input').value.trim() || '100ml';
+            const notes = document.getElementById('perfume-notes-input').value.trim();
+            const offer = document.getElementById('perfume-offer-input').value.trim();
+            const platform = document.querySelector('input[name="post-platform"]:checked').value;
+
+            if (!prodName) {
+                showToast("Please enter the Perfume Name first (e.g. Oud Royale)!", "warning");
+                document.getElementById('perfume-name-input').focus();
+                return;
+            }
+
+            showToast("Crafting 100% authentic luxury perfume sales copy & viral hashtags...", "warning");
+
+            try {
+                const res = await fetch('/api/ai/generate-luxury-copy', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        product_name: prodName,
+                        volume_ml: vol,
+                        scent_notes: notes,
+                        price_offer: offer,
+                        platform: platform
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('post-caption-input').value = data.caption;
+                    document.getElementById('post-hashtags-input').value = data.hashtags;
+                    showToast("✨ 100% Authentic Luxury Copy & Hashtags Generated!");
+                } else {
+                    showToast("Copy error: " + (data.error || "Failed"), "error");
+                }
+            } catch (e) {
+                showToast("AI error: " + e, "error");
+            }
         }
 
         // --- MULTI-IMAGE & COVER MANAGEMENT (1 to 12 Photos) ---
@@ -883,7 +1014,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             } else if (mode === 'calendar') {
                 document.getElementById('timing-btn-calendar').classList.add('active');
                 calBox.classList.remove('d-none');
-                setQuickTime(60); // default to 1 hr in future
+                setQuickTime(60);
                 submitBtn.innerHTML = '<i class="fa-solid fa-calendar-check me-2"></i>Schedule Post on Calendar';
                 submitBtn.className = 'btn btn-info text-dark w-100 py-3 rounded-pill fw-bold fs-5 shadow';
             } else {
@@ -908,118 +1039,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             document.getElementById('custom-schedule-datetime').value = d.toISOString().slice(0, 16);
         }
 
-        // --- WORLDWIDE MUSIC SEARCH & TRIMMER ---
-        function openMusicModal() {
-            musicModal.show();
-            if (!document.getElementById('music-search-query').value) {
-                document.getElementById('music-search-query').value = 'Trending Hits';
-                executeMusicSearch();
-            }
-        }
-
-        function setTrimDuration(dur) {
-            currentTrimDuration = dur;
-            ['15', '30', '60'].forEach(d => {
-                document.getElementById(`btn-dur-${d}`).classList.remove('active');
-            });
-            document.getElementById(`btn-dur-${dur}`).classList.add('active');
-        }
-
-        async function executeMusicSearch() {
-            const query = document.getElementById('music-search-query').value.trim() || 'Trending Hits';
-            const container = document.getElementById('music-search-results');
-            container.innerHTML = '<div class="text-center py-4 text-info"><i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i><div>Searching 100M+ global songs...</div></div>';
-
-            try {
-                const res = await fetch(`/api/audio/search?q=${encodeURIComponent(query)}&limit=25`);
-                const data = await res.json();
-                if (data.success && data.tracks && data.tracks.length > 0) {
-                    let html = '';
-                    data.tracks.forEach(t => {
-                        const escapedTitle = (t.title || '').replace(/"/g, '&quot;');
-                        const escapedArtist = (t.artist || '').replace(/"/g, '&quot;');
-                        html += `
-                            <div class="p-3 bg-dark bg-opacity-75 rounded-3 border border-secondary mb-2 d-flex justify-content-between align-items-center gap-3">
-                                <div class="d-flex align-items-center gap-3">
-                                    <img src="${t.artwork || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100'}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;">
-                                    <div>
-                                        <div class="fw-bold text-white small text-truncate" style="max-width: 260px;">${escapedTitle}</div>
-                                        <div class="text-secondary small text-truncate" style="max-width: 260px;">${escapedArtist}</div>
-                                        <audio controls src="${t.preview_url}" style="height: 28px; width: 220px; margin-top: 4px;"></audio>
-                                    </div>
-                                </div>
-                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" onclick="selectMusicTrack('${t.id}', '${escapedTitle}', '${escapedArtist}', '${t.preview_url}', '${t.artwork}')">
-                                    <i class="fa-solid fa-check me-1"></i> Attach
-                                </button>
-                            </div>
-                        `;
-                    });
-                    container.innerHTML = html;
-                } else {
-                    container.innerHTML = '<div class="text-center py-4 text-secondary">No songs found for that search query. Try another artist or track name!</div>';
-                }
-            } catch (e) {
-                container.innerHTML = `<div class="text-center py-4 text-danger">Search error: ${e}</div>`;
-            }
-        }
-
-        function selectMusicTrack(id, title, artist, previewUrl, artwork) {
-            const startSec = parseInt(document.getElementById('slider-trim-start').value || '0');
-            attachedAudio = {
-                id: id,
-                title: title,
-                artist: artist,
-                preview_url: previewUrl,
-                artwork: artwork,
-                start_sec: startSec,
-                duration_sec: currentTrimDuration
-            };
-
-            document.getElementById('attached-music-title').innerText = title;
-            document.getElementById('attached-music-subtitle').innerText = `${artist} (Trim: ${startSec}s - ${currentTrimDuration}s)`;
-            document.getElementById('attached-music-art').innerHTML = `<img src="${artwork}" style="width: 100%; height: 100%; object-fit: cover;">`;
-            document.getElementById('btn-remove-music').classList.remove('d-none');
-
-            musicModal.hide();
-            showToast(`Attached song: ${title} (${currentTrimDuration}s trim)`);
-        }
-
-        function removeAttachedMusic() {
-            attachedAudio = null;
-            document.getElementById('attached-music-title').innerText = "No Audio Attached (Optional)";
-            document.getElementById('attached-music-subtitle').innerText = "Pick from 100M+ global songs with custom trim";
-            document.getElementById('attached-music-art').innerHTML = '<i class="fa-solid fa-music"></i>';
-            document.getElementById('btn-remove-music').classList.add('d-none');
-        }
-
-        // --- AI VISION CAPTION GENERATION ---
-        async function generateAICaptionForMedia() {
-            if (selectedMediaFiles.length === 0) {
-                showToast("Please choose at least 1 photo first to analyze with AI Vision!", "warning");
-                return;
-            }
-
-            const primaryFile = selectedMediaFiles[coverIndex] || selectedMediaFiles[0];
-            showToast("Gemini 1.5 & GPT-4o Vision inspecting product photo...", "warning");
-            const fd = new FormData();
-            fd.append("file", primaryFile);
-
-            try {
-                const res = await fetch('/api/ai/analyze-media', { method: 'POST', body: fd });
-                const d = await res.json();
-                if (d.success) {
-                    if (d.caption) document.getElementById('post-caption-input').value = d.caption;
-                    if (d.hashtags) document.getElementById('post-hashtags-input').value = d.hashtags;
-                    showToast("AI Vision Hook & Hashtags generated successfully!");
-                } else {
-                    showToast(d.error || "AI Vision failed", "error");
-                }
-            } catch (e) {
-                showToast("AI Vision error: " + e, "error");
-            }
-        }
-
-        // --- SUBMIT POST (1-12 PHOTOS, COVER, SCHEDULER, CAROUSEL) ---
+        // --- SUBMIT POST ---
         async function submitPostAction() {
             if (selectedMediaFiles.length === 0) {
                 showToast("Please select at least 1 image or video to post!", "warning");
@@ -1032,7 +1052,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             const schedTime = document.getElementById('custom-schedule-datetime').value;
 
             if (currentScheduleMode === 'calendar' && !schedTime) {
-                showToast("Please pick a date and time on the calendar!", "warning");
+                showToast("Please pick an exact date and time on the calendar!", "warning");
                 return;
             }
 
@@ -1046,11 +1066,6 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             fd.append('hashtags', hashtags);
             fd.append('schedule_mode', currentScheduleMode);
             fd.append('scheduled_time', schedTime);
-            if (attachedAudio) {
-                fd.append('custom_audio_url', attachedAudio.preview_url);
-                fd.append('audio_trim_start', attachedAudio.start_sec);
-                fd.append('audio_trim_duration', attachedAudio.duration_sec);
-            }
 
             showToast("Processing media and configuring multi-platform upload...", "warning");
 
@@ -1060,8 +1075,8 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                 if (d.success) {
                     showToast(d.message || "Post created successfully!");
                     clearAllSelectedMedia();
-                    removeAttachedMusic();
                     document.getElementById('post-caption-input').value = '';
+                    document.getElementById('perfume-name-input').value = '';
                     loadReelsFeed();
                     loadCalendarFeed();
                 } else {
@@ -1072,7 +1087,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             }
         }
 
-        // --- CALENDAR FEED LOADER ---
+        // --- CALENDAR FEED WITH EXACT DAY, DATE, TIME & WAQT ---
         async function loadCalendarFeed() {
             const container = document.getElementById('calendar-feed-container');
             try {
@@ -1098,20 +1113,54 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
 
                     let typeBadge = isCarousel ? '<span class="badge bg-warning text-dark"><i class="fa-solid fa-images me-1"></i>Album</span>' : '<span class="badge bg-secondary">Single</span>';
 
+                    // Formatting exact schedule
+                    const dtInfo = ev.dt_info || { exact_date: ev.scheduled_time || 'Queue', exact_time: '', waqt: '', countdown: ev.scheduled_countdown || 'Scheduled' };
+
+                    // Cover thumbnail
+                    let previewFile = '';
+                    if (ev.processed_path) {
+                        previewFile = ev.processed_path.split(/[\\\\/]/).pop();
+                    } else if (ev.file_path) {
+                        if (ev.file_path.trim().startsWith('[')) {
+                            try {
+                                const arr = JSON.parse(ev.file_path);
+                                previewFile = (arr[0] || '').split(/[\\\\/]/).pop();
+                            } catch (e) {}
+                        } else {
+                            previewFile = ev.file_path.split(/[\\\\/]/).pop();
+                        }
+                    }
+                    const thumbUrl = previewFile ? `/api/media/${previewFile}` : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200';
+
                     html += `
                         <div class="col-md-6 col-lg-4">
                             <div class="p-3 bg-dark bg-opacity-75 rounded-3 border border-secondary d-flex flex-column justify-content-between h-100">
                                 <div>
+                                    <!-- Badges & Status -->
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <div class="d-flex gap-1">${platBadge} ${typeBadge}</div>
-                                        <span class="badge bg-info text-dark fw-bold"><i class="fa-solid fa-clock me-1"></i>${ev.scheduled_countdown || 'Scheduled'}</span>
+                                        <span class="badge bg-info text-dark fw-bold"><i class="fa-solid fa-clock me-1"></i>${dtInfo.countdown}</span>
                                     </div>
-                                    <div class="small text-white fw-bold text-truncate mb-1">${ev.caption || 'No caption'}</div>
-                                    <div class="small text-secondary font-monospace" style="font-size: 0.75rem;">Time: ${ev.scheduled_time || 'Queue'}</div>
+
+                                    <!-- Media & Exact Time Box -->
+                                    <div class="d-flex gap-3 align-items-center mb-2 p-2 bg-dark rounded-3 border border-secondary border-opacity-50">
+                                        <img src="${thumbUrl}" style="width: 55px; height: 55px; border-radius: 8px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200'">
+                                        <div>
+                                            <div class="fw-bold text-warning small"><i class="fa-solid fa-calendar-day me-1"></i>${dtInfo.exact_date}</div>
+                                            <div class="fw-bold text-white fs-6"><i class="fa-solid fa-clock me-1 text-info"></i>${dtInfo.exact_time}</div>
+                                            <div class="badge bg-secondary text-white-50" style="font-size: 0.68rem;">${dtInfo.waqt}</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Caption Snippet -->
+                                    <div class="small text-white-50 text-truncate mb-1" style="max-height: 40px; overflow: hidden;">
+                                        ${ev.caption || 'No caption'}
+                                    </div>
                                 </div>
+
                                 <div class="d-flex gap-2 mt-3 pt-2 border-top border-secondary">
                                     <button class="btn btn-sm btn-success rounded-pill flex-grow-1 fw-bold" onclick="forcePost(${ev.id})">
-                                        <i class="fa-solid fa-bolt me-1"></i> Post Now
+                                        <i class="fa-solid fa-bolt me-1"></i> Post Right Now
                                     </button>
                                     <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="deletePost(${ev.id})">
                                         <i class="fa-solid fa-trash"></i>
@@ -1180,7 +1229,6 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                     statusBadge = `<span class="badge bg-danger text-white fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i> Failed</span>`;
                 }
 
-                // Resolve preview filename
                 let previewFile = '';
                 if (p.processed_path) {
                     previewFile = p.processed_path.split(/[\\\\/]/).pop();
@@ -1298,36 +1346,9 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             } catch (e) {}
         }
 
-        // --- ACCOUNTS & SETTINGS ---
+        // --- SETTINGS ---
         function openSettingsModal() {
             settingsModal.show();
-        }
-
-        function openLoginModal() {
-            loginModal.show();
-        }
-
-        async function directLoginMeta() {
-            const token = document.getElementById('login-meta-token').value.trim();
-            if (!token) return;
-            showToast("Connecting Meta token...", "warning");
-            try {
-                const res = await fetch('/api/accounts/connect-meta', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ token: token })
-                });
-                const d = await res.json();
-                if (d.success) {
-                    showToast(d.message || "Connected!");
-                    loginModal.hide();
-                    loadAccounts();
-                } else {
-                    showToast(d.error || "Connection failed", "error");
-                }
-            } catch (e) {
-                showToast("Error: " + e, "error");
-            }
         }
 
         async function verifyMetaToken() {
@@ -1343,7 +1364,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                 const d = await res.json();
                 if (d.success) {
                     showToast(d.message || "Meta token verified & synced!");
-                    loadAccounts();
+                    checkLiveHealth();
                 } else {
                     showToast("Meta error: " + (d.error || "Failed"), "error");
                 }
@@ -1376,6 +1397,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                     showToast("Settings saved successfully!");
                     settingsModal.hide();
                     loadInitialData();
+                    checkLiveHealth();
                 } else {
                     showToast("Error saving: " + d.error, "error");
                 }
@@ -1388,10 +1410,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             try {
                 const sRes = await fetch('/api/settings');
                 const s = await sRes.json();
-                if (s.brand_name) {
-                    document.getElementById('setting-brand-name').value = s.brand_name;
-                    document.getElementById('hero-brand-name').innerText = s.brand_name;
-                }
+                if (s.brand_name) document.getElementById('setting-brand-name').value = s.brand_name;
                 if (s.gemini_api_key) document.getElementById('setting-gemini-key').value = s.gemini_api_key;
                 if (s.openai_api_key) document.getElementById('setting-openai-key').value = s.openai_api_key;
                 if (s.meta_access_token) document.getElementById('setting-meta-token').value = s.meta_access_token;
@@ -1401,22 +1420,8 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                 if (s.r2_secret_access_key) document.getElementById('setting-r2-secret-key').value = s.r2_secret_access_key;
                 if (s.r2_public_domain) document.getElementById('setting-r2-public-domain').value = s.r2_public_domain;
 
-                loadAccounts();
                 loadReelsFeed();
                 loadCalendarFeed();
-            } catch (e) {}
-        }
-
-        async function loadAccounts() {
-            try {
-                const res = await fetch('/api/accounts');
-                const data = await res.json();
-                if (data.instagram && data.instagram.username) {
-                    document.getElementById('chip-insta').innerText = '@' + data.instagram.username;
-                }
-                if (data.facebook && data.facebook.page_name) {
-                    document.getElementById('chip-fb').innerText = data.facebook.page_name;
-                }
             } catch (e) {}
         }
 
@@ -1428,19 +1433,6 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                     document.getElementById('stat-ig-count').innerText = `${d.daily_counts.instagram || 0}/3`;
                     document.getElementById('stat-fb-count').innerText = `${d.daily_counts.facebook || 0}/3`;
                 }
-            } catch (e) {}
-        }
-
-        async function toggleAutoPilot(checkbox) {
-            const mode = checkbox.checked ? 'human_delay' : 'instant';
-            try {
-                await fetch('/api/scheduler/mode', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ mode: mode })
-                });
-                document.getElementById('autopilot-mode-label').innerText = checkbox.checked ? 'Anti-Spam 2-3h Delay' : 'Instant Publishing';
-                showToast(`Auto-Pilot mode set to: ${mode}`);
             } catch (e) {}
         }
     </script>
