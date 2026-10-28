@@ -1,16 +1,19 @@
-"""
-Configuration manager for API keys, limits, folders, and delay settings.
-Persists settings into config.json.
-"""
 import os
 import json
-from dataclasses import dataclass, asdict, field
-from typing import Dict, Any
+from dataclasses import dataclass, asdict
+from typing import Optional
+from pathlib import Path
 
+# PERMANENT CREDENTIALS (NEVER EXPIRES)
+PERMANENT_META_TOKEN = "EAAZATAUGR6T0BSZCvsRTCqnkWl4PI0cJI5YvHcAEtlEp96JB59RSTGdEqbND72SDY01BRLdO0dQxi0xjXbdAmCZAxZBuKOvVEKUW9I2tMFNyC8ZBdnd2F6ZC5caZAQ6ZBhuX1tZA7TVMZB85Ec7rk9q4duiUJygZAmdXxTU5kd2sJZBUCBO2mrzhWWlpg4huzuJL64d7ZCPF4lsE9"
+PERMANENT_FB_PAGE_ID = "800869286434757"
+PERMANENT_IG_ID = "17841423338066933"
+PERMANENT_BRAND_NAME = "JANI's Perfume"
+PERMANENT_APP_ID = "1780114720418109"
+PERMANENT_APP_SECRET = "6af61d4174e0d667bbe5d022c6f32b3b"
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(PROJECT_ROOT, "config.json")
-
 
 @dataclass
 class AppConfig:
@@ -20,14 +23,14 @@ class AppConfig:
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
     ai_engine: str = "auto"  # "auto", "gemini", "openai"
-    brand_name: str = "My Brand"
+    brand_name: str = PERMANENT_BRAND_NAME
     
-    # Social Media API Credentials
-    meta_access_token: str = ""
-    instagram_account_id: str = ""
-    facebook_page_id: str = ""
-    meta_app_id: str = ""
-    meta_app_secret: str = ""
+    # Social Media API Credentials (Permanent Defaults for JANI's Perfume)
+    meta_access_token: str = PERMANENT_META_TOKEN
+    instagram_account_id: str = PERMANENT_IG_ID
+    facebook_page_id: str = PERMANENT_FB_PAGE_ID
+    meta_app_id: str = PERMANENT_APP_ID
+    meta_app_secret: str = PERMANENT_APP_SECRET
     
     tiktok_client_key: str = ""
     tiktok_client_secret: str = ""
@@ -48,6 +51,7 @@ class AppConfig:
     daily_limit_facebook: int = 3
     min_delay_minutes: int = 120  # 2 hours
     max_delay_minutes: int = 240  # 4 hours
+    human_like_variance: bool = True
     scheduler_check_interval_seconds: int = 5
 
     # Media Processing
@@ -63,16 +67,24 @@ class AppConfig:
     processed_folder: str = os.path.join(PROJECT_ROOT, "processed_media")
     audio_library_folder: str = os.path.join(PROJECT_ROOT, "audio_library")
 
+    # Storage Paths
+    watch_folder_instagram: str = os.path.join(PROJECT_ROOT, "watch_folders", "Ready_for_Instagram")
+    output_folder_tiktok: str = "output/tiktok"
+    output_folder_meta: str = "output/meta"
+
     def ensure_directories(self):
-        """Ensures all configured folders exist on disk."""
+        """Ensures all configured folders exist on disk (safe on serverless)."""
         if os.environ.get("VERCEL"):
             return
         for folder in [
             self.watch_folder_insta,
             self.watch_folder_tiktok,
             self.watch_folder_facebook,
+            self.watch_folder_instagram,
             self.processed_folder,
-            self.audio_library_folder
+            self.audio_library_folder,
+            "assets/watermarks",
+            "assets/fonts"
         ]:
             try:
                 os.makedirs(folder, exist_ok=True)
@@ -81,8 +93,12 @@ class AppConfig:
 
 
 class ConfigManager:
+    """Thread-safe singleton config manager that persists changes to JSON."""
     def __init__(self, config_file: str = CONFIG_PATH):
-        self.config_file = config_file
+        if os.environ.get("VERCEL"):
+            self.config_file = "/tmp/reelpilot_config.json"
+        else:
+            self.config_file = config_file
         self.config = self.load()
         self.config.ensure_directories()
 
@@ -98,25 +114,28 @@ class ConfigManager:
         
         cfg = AppConfig(**{k: v for k, v in data.items() if hasattr(AppConfig, k)})
         
-        if os.getenv("META_ACCESS_TOKEN"):
-            cfg.meta_access_token = os.getenv("META_ACCESS_TOKEN")
-        if os.getenv("FACEBOOK_PAGE_ID"):
-            cfg.facebook_page_id = os.getenv("FACEBOOK_PAGE_ID")
-        if os.getenv("INSTAGRAM_ACCOUNT_ID"):
-            cfg.instagram_account_id = os.getenv("INSTAGRAM_ACCOUNT_ID")
-        if os.getenv("BRAND_NAME"):
-            cfg.brand_name = os.getenv("BRAND_NAME")
+        # Ensure permanent token is preserved
+        if not cfg.meta_access_token:
+            cfg.meta_access_token = os.getenv("META_ACCESS_TOKEN", PERMANENT_META_TOKEN)
+        if not cfg.facebook_page_id:
+            cfg.facebook_page_id = os.getenv("FACEBOOK_PAGE_ID", PERMANENT_FB_PAGE_ID)
+        if not cfg.instagram_account_id:
+            cfg.instagram_account_id = os.getenv("INSTAGRAM_ACCOUNT_ID", PERMANENT_IG_ID)
+        if not cfg.brand_name or cfg.brand_name == "My Brand":
+            cfg.brand_name = os.getenv("BRAND_NAME", PERMANENT_BRAND_NAME)
+        if not cfg.meta_app_id:
+            cfg.meta_app_id = os.getenv("META_APP_ID", PERMANENT_APP_ID)
+        if not cfg.meta_app_secret:
+            cfg.meta_app_secret = os.getenv("META_APP_SECRET", PERMANENT_APP_SECRET)
 
-        if not os.path.exists(self.config_file) and not os.environ.get("VERCEL"):
+        if not os.path.exists(self.config_file):
             self.save(cfg)
         return cfg
 
     def save(self, cfg: AppConfig = None):
-        """Saves current configuration to config.json."""
+        """Saves current configuration to config.json or /tmp on Vercel."""
         if cfg:
             self.config = cfg
-        if os.environ.get("VERCEL"):
-            return
         try:
             with open(self.config_file, "w", encoding="utf-8") as f:
                 json.dump(asdict(self.config), f, indent=4)

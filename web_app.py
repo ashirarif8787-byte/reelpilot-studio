@@ -82,7 +82,7 @@ if not IS_VERCEL:
     except Exception as e:
         logger.warning(f"Background worker start skipped: {e}")
 
-ACCOUNTS_FILE = os.path.join(ROOT_DIR, "connected_accounts.json")
+ACCOUNTS_FILE = "/tmp/connected_accounts.json" if IS_VERCEL else os.path.join(ROOT_DIR, "connected_accounts.json")
 
 def load_accounts():
     if os.path.exists(ACCOUNTS_FILE):
@@ -95,14 +95,12 @@ def load_accounts():
     fb_connected = bool(cfg.meta_access_token and cfg.facebook_page_id)
     ig_connected = bool(cfg.meta_access_token and cfg.instagram_account_id)
     return {
-        "instagram": {"connected": ig_connected, "username": "official_janisperfume" if ig_connected else "Not Connected", "id": cfg.instagram_account_id or "17841423338066933", "auth_type": "meta_graph_api"},
-        "facebook": {"connected": fb_connected, "page_name": "JANI's Perfume" if fb_connected else "Not Connected", "page_id": cfg.facebook_page_id or "800869286434757", "auth_type": "meta_graph_api"},
+        "instagram": {"connected": ig_connected, "username": "official_janisperfume" if ig_connected else "Not Connected", "id": cfg.instagram_account_id or "17841423338066933", "auth_type": "permanent_page_token"},
+        "facebook": {"connected": fb_connected, "page_name": "JANI's Perfume" if fb_connected else "Not Connected", "page_id": cfg.facebook_page_id or "800869286434757", "auth_type": "permanent_page_token"},
         "tiktok": {"connected": False, "username": "", "display_name": ""}
     }
 
 def save_accounts(data):
-    if IS_VERCEL:
-        return
     try:
         with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
@@ -273,15 +271,11 @@ def api_ai_analyze_media():
 @app.route("/api/accounts/health")
 def api_accounts_health():
     cfg = config_manager.config
-    token = (cfg.meta_access_token or "").strip()
+    token = request.headers.get("X-Meta-Token") or (cfg.meta_access_token or "").strip()
     if not token:
-        return jsonify({
-            "connected": False,
-            "status": "NOT_CONNECTED",
-            "message": "No Meta Access Token configured. Paste your token to connect.",
-            "facebook": {"connected": False, "name": "Not Connected", "id": ""},
-            "instagram": {"connected": False, "username": "Not Connected", "id": ""}
-        })
+        from app.config import PERMANENT_META_TOKEN
+        token = PERMANENT_META_TOKEN
+        cfg.meta_access_token = token
 
     try:
         url = f"https://graph.facebook.com/v19.0/me?access_token={token}&fields=id,name"

@@ -779,7 +779,9 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
         // --- LIVE HEALTH STATUS CHECK ---
         async function checkLiveHealth(isUserTriggered = false) {
             try {
-                const res = await fetch('/api/accounts/health');
+                const storedToken = localStorage.getItem('reelpilot_meta_token');
+                const headers = storedToken ? { 'X-Meta-Token': storedToken } : {};
+                const res = await fetch('/api/accounts/health', { headers });
                 const data = await res.json();
 
                 const banner = document.getElementById('live-connection-banner');
@@ -856,6 +858,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                 const d = await res.json();
                 if (d.success) {
                     showToast(d.message || "Connected successfully!");
+                    try { localStorage.setItem('reelpilot_meta_token', token); } catch(e){}
                     document.getElementById('banner-token-input').value = '';
                     checkLiveHealth();
                 } else {
