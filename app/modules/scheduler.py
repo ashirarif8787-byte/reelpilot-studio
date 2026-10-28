@@ -1,3 +1,4 @@
+import json
 """
 Module 4: Scheduler & Human-like Delay Queue Engine
 Uses Python's schedule library and background worker threads.
@@ -507,7 +508,7 @@ def execute_post_upload(post_id: int, db=None):
 
 
 def check_and_upload_due_posts(db=None):
-    """Checks for all SCHEDULED posts that are due now and uploads them."""
+    """Checks for all SCHEDULED posts that are due now and uploads them in the background."""
     if db is None:
         from app.database.db import DatabaseManager
         db = DatabaseManager()
@@ -515,15 +516,27 @@ def check_and_upload_due_posts(db=None):
         return []
 
     scheduled_posts = db.get_posts(status=PostStatus.SCHEDULED.value)
-    uploaded = []
+    due_posts = []
 
     for post in scheduled_posts:
         if not post.scheduled_time:
             continue
         try:
             if is_post_due(post.scheduled_time):
-                ok, rid, msg = execute_post_upload(post.id, db=db)
-                uploaded.append({"post_id": post.id, "success": ok, "remote_id": rid, "message": msg})
+                # Mark as UPLOADING right away so it isn't picked up multiple times
+                db.update_post(post.id, status=PostStatus.UPLOADING.value)
+                due_posts.append(post.id)
         except Exception as e:
-            logger.warning(f"[check_due] Error on post #{post.id}: {e}")
-    return uploaded
+            logger.warning(f"[check_due] Error evaluating post #{post.id}: {e}")
+
+    if due_posts:
+        def _bg_runner(pids, d):
+            for pid in pids:
+                try:
+                    execute_post_upload(pid, db=d)
+                except Exception as ex:
+                    logger.error(f"[check_due] BG execution error on post #{pid}: {ex}")
+
+        threading.Thread(target=_bg_runner, args=(due_posts, db), daemon=True).start()
+
+    return due_posts

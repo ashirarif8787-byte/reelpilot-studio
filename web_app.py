@@ -581,78 +581,66 @@ def api_upload():
         else:
             platforms_to_save = [platform]
 
-        saved_files_by_platform = {p: [] for p in platforms_to_save}
+        # 1. Save uploaded files in a clean studio_uploads folder (NOT watch_folders to avoid watcher collision)
+        upload_dir = "/tmp/studio_uploads" if IS_VERCEL else os.path.join(ROOT_DIR, "studio_uploads")
+        os.makedirs(upload_dir, exist_ok=True)
 
+        saved_file_paths = []
         for idx, file in enumerate(uploaded_files):
             fname = secure_filename(file.filename)
             if not fname:
                 fname = f"media_{int(time.time())}_{idx}.jpg"
             unique_fname = f"{int(time.time())}_{idx}_{fname}"
-            file_bytes = file.read()
+            target_path = os.path.join(upload_dir, unique_fname)
+            file.save(target_path)
+            saved_file_paths.append(target_path)
 
-            for p in platforms_to_save:
-                if IS_VERCEL:
-                    target_dir = f"/tmp/watch_folders/{p}"
-                else:
-                    if p == "instagram":
-                        target_dir = config_manager.config.watch_folder_insta
-                    elif p == "tiktok":
-                        target_dir = config_manager.config.watch_folder_tiktok
-                    else:
-                        target_dir = config_manager.config.watch_folder_facebook
+        # 2. Upload media items to CDN ONCE (Shared by all selected platforms)
+        p_paths = []
+        for r_path in saved_file_paths:
+            try:
+                cdn_url = storage_service.upload_file(r_path)
+                p_paths.append(cdn_url if cdn_url else r_path)
+            except Exception as ue:
+                logger.warning(f"CDN upload error for {r_path}: {ue}. Using local path.")
+                p_paths.append(r_path)
 
-                os.makedirs(target_dir, exist_ok=True)
-                target_path = os.path.join(target_dir, unique_fname)
-                with open(target_path, "wb") as f:
-                    f.write(file_bytes)
-                saved_files_by_platform[p].append(target_path)
+        first_path = p_paths[0]
+        is_image_ext = any(first_path.lower().endswith(x) for x in [".jpg", ".jpeg", ".png", ".webp"]) or ("iili.io" in first_path or "freeimage" in first_path or "uguu.se" in first_path)
+
+        # 1. Multi-photo -> carousel
+        # 2. Single image -> native image
+        # 3. Video file -> video
+        if len(p_paths) > 1:
+            media_type = "carousel"
+            stored_file_path = json.dumps(p_paths)
+        elif is_image_ext:
+            media_type = "image"
+            stored_file_path = first_path
+        else:
+            media_type = "video"
+            stored_file_path = first_path
+
+        post_status = PostStatus.QUEUED.value
+        post_sched_time = None
+
+        if schedule_mode == "calendar" and (scheduled_time_utc or scheduled_time):
+            post_status = PostStatus.SCHEDULED.value
+            post_sched_time = scheduled_time_utc or scheduled_time
+        elif schedule_mode == "instant":
+            post_status = PostStatus.UPLOADING.value
+        else:
+            post_status = PostStatus.QUEUED.value
+
+        final_caption = caption or f"🌸 Luxury Fragrance Experience from {config_manager.config.brand_name}!"
+        final_hashtags = hashtags or "#JanisPerfume #Luxury #Fragrance #Trending"
 
         current_db = get_db()
         created_post_ids = []
 
         for p in platforms_to_save:
-            raw_paths = saved_files_by_platform[p]
-            p_paths = []
-            for r_path in raw_paths:
-                try:
-                    cdn_url = storage_service.upload_file(r_path)
-                    p_paths.append(cdn_url if cdn_url else r_path)
-                except Exception as ue:
-                    logger.warning(f"CDN upload error for {r_path}: {ue}. Using local path.")
-                    p_paths.append(r_path)
-
-            first_path = p_paths[0]
-            is_image_ext = any(first_path.lower().endswith(x) for x in [".jpg", ".jpeg", ".png", ".webp"]) or ("iili.io" in first_path or "freeimage" in first_path or "uguu.se" in first_path)
-
-            # 1. Multi-photo -> carousel
-            # 2. Single image -> native image
-            # 3. Video file -> video
-            if len(p_paths) > 1:
-                media_type = "carousel"
-                stored_file_path = json.dumps(p_paths)
-            elif is_image_ext:
-                media_type = "image"
-                stored_file_path = first_path
-            else:
-                media_type = "video"
-                stored_file_path = first_path
-
-            post_status = PostStatus.QUEUED.value
-            post_sched_time = None
-
-            if schedule_mode == "calendar" and (scheduled_time_utc or scheduled_time):
-                post_status = PostStatus.SCHEDULED.value
-                post_sched_time = scheduled_time_utc or scheduled_time
-            elif schedule_mode == "instant":
-                post_status = PostStatus.UPLOADING.value
-            else:
-                post_status = PostStatus.QUEUED.value
-
-            final_caption = caption or f"🌸 Luxury Fragrance Experience from {config_manager.config.brand_name}!"
-            final_hashtags = hashtags or "#JanisPerfume #Luxury #Fragrance #Trending"
-
             if current_db:
-                base_hash = current_db.calculate_file_hash(first_path)
+                base_hash = current_db.calculate_file_hash(saved_file_paths[0])
                 f_hash = f"{base_hash}_{p}_{int(time.time()*1000)}"
                 post_id = current_db.insert_post(
                     file_path=stored_file_path,
@@ -670,16 +658,26 @@ def api_upload():
                     )
                     created_post_ids.append(post_id)
 
-                    # If Instant upload requested or due immediately, execute upload!
-                    from app.modules.scheduler import execute_post_upload, is_post_due
-                    if schedule_mode == "instant":
-                        ok, rid, emsg = execute_post_upload(post_id, db=current_db)
-                    elif schedule_mode == "calendar" and post_sched_time:
-                        try:
-                            if is_post_due(post_sched_time):
-                                execute_post_upload(post_id, db=current_db)
-                        except Exception:
-                            pass
+        # 3. Background execution for instant uploads or due posts (Non-blocking!)
+        due_now_pids = []
+        for pid in created_post_ids:
+            if schedule_mode == "instant":
+                due_now_pids.append(pid)
+            elif schedule_mode == "calendar" and post_sched_time:
+                from app.modules.scheduler import is_post_due
+                if is_post_due(post_sched_time):
+                    due_now_pids.append(pid)
+
+        if due_now_pids:
+            def _bg_execute(pids, d):
+                for pid in pids:
+                    try:
+                        from app.modules.scheduler import execute_post_upload
+                        execute_post_upload(pid, db=d)
+                    except Exception as ex:
+                        logger.error(f"[api_upload] BG upload error for #{pid}: {ex}")
+
+            threading.Thread(target=_bg_execute, args=(list(due_now_pids), current_db), daemon=True).start()
 
         created_events = []
         if current_db:
@@ -701,6 +699,7 @@ def api_upload():
     except Exception as e:
         logger.error(f"[api_upload] Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
 
 if __name__ == "__main__":
     print("================================================================")
