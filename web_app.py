@@ -173,18 +173,20 @@ def format_post_datetime(iso_str: str) -> dict:
             "countdown": "Ready"
         }
     try:
-        raw_str = str(iso_str).strip()
-        if raw_str.endswith("Z"):
-            dt = datetime.fromisoformat(raw_str.replace("Z", "+00:00")).astimezone()
-        else:
-            clean = raw_str.split(".")[0]
-            if len(clean) == 16:
-                clean += ":00"
-            dt = datetime.fromisoformat(clean)
-        day_name = dt.strftime("%A")
-        date_str = dt.strftime(f"{day_name}, %d %b %Y")
-        time_str = dt.strftime("%I:%M %p")
-        h = dt.hour
+        from app.modules.scheduler import parse_scheduled_datetime
+        dt = parse_scheduled_datetime(iso_str)
+        if not dt:
+            return {
+                "exact_date": str(iso_str),
+                "exact_time": "",
+                "waqt": "",
+                "countdown": "Scheduled"
+            }
+        local_dt = dt.astimezone()
+        day_name = local_dt.strftime("%A")
+        date_str = local_dt.strftime(f"{day_name}, %d %b %Y")
+        time_str = local_dt.strftime("%I:%M %p")
+        h = local_dt.hour
         if 5 <= h < 12:
             waqt = "Subah (Morning)"
         elif 12 <= h < 17:
@@ -568,9 +570,18 @@ def api_upload():
         created_post_ids = []
 
         for p in platforms_to_save:
-            p_paths = saved_files_by_platform[p]
+            raw_paths = saved_files_by_platform[p]
+            p_paths = []
+            for r_path in raw_paths:
+                try:
+                    cdn_url = storage_service.upload_file(r_path)
+                    p_paths.append(cdn_url if cdn_url else r_path)
+                except Exception as ue:
+                    logger.warning(f"CDN upload error for {r_path}: {ue}. Using local path.")
+                    p_paths.append(r_path)
+
             first_path = p_paths[0]
-            is_image_ext = any(first_path.lower().endswith(x) for x in [".jpg", ".jpeg", ".png", ".webp"])
+            is_image_ext = any(first_path.lower().endswith(x) for x in [".jpg", ".jpeg", ".png", ".webp"]) or ("iili.io" in first_path or "freeimage" in first_path or "uguu.se" in first_path)
 
             # 1. Multi-photo -> carousel
             # 2. Single image -> native image
@@ -618,15 +629,12 @@ def api_upload():
                     created_post_ids.append(post_id)
 
                     # If Instant upload requested or due immediately, execute upload!
-                    from app.modules.scheduler import execute_post_upload
+                    from app.modules.scheduler import execute_post_upload, is_post_due
                     if schedule_mode == "instant":
                         ok, rid, emsg = execute_post_upload(post_id, db=current_db)
                     elif schedule_mode == "calendar" and post_sched_time:
                         try:
-                            clean_t = str(post_sched_time).replace("Z", "").split(".")[0]
-                            if len(clean_t) == 16:
-                                clean_t += ":00"
-                            if datetime.fromisoformat(clean_t) <= datetime.now() or datetime.fromisoformat(clean_t) <= datetime.utcnow():
+                            if is_post_due(post_sched_time):
                                 execute_post_upload(post_id, db=current_db)
                         except Exception:
                             pass

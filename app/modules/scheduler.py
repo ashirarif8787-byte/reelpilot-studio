@@ -8,7 +8,7 @@ import os
 import time
 import random
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Callable, Dict, Any
 
 from app.config import config_manager
@@ -18,6 +18,36 @@ from app.modules.media_processor import media_processor
 from app.modules.caption_generator import caption_generator
 from app.modules.uploaders import MetaUploader, TikTokUploader, TokenExpiredException
 from app.utils.logger import logger
+
+
+def parse_scheduled_datetime(sched_str: str) -> Optional[datetime]:
+    """Accurately parses scheduled timestamps supporting UTC 'Z', timezone offsets, or local times."""
+    if not sched_str:
+        return None
+    try:
+        s = str(sched_str).strip()
+        if s.endswith("Z"):
+            return datetime.fromisoformat(s.replace("Z", "+00:00"))
+        elif "+" in s or ("-" in s[10:] and len(s) > 16):
+            return datetime.fromisoformat(s)
+        else:
+            clean = s.split(".")[0]
+            if len(clean) == 16:
+                clean += ":00"
+            naive_dt = datetime.fromisoformat(clean)
+            return naive_dt.astimezone()
+    except Exception:
+        return None
+
+
+def is_post_due(sched_str: str) -> bool:
+    """Checks whether a scheduled post's time has arrived based on timezone-aware comparison."""
+    target_dt = parse_scheduled_datetime(sched_str)
+    if not target_dt:
+        return False
+    now_aware = datetime.now().astimezone()
+    return now_aware >= target_dt
+
 
 
 class SocialScheduler:
@@ -244,16 +274,8 @@ class SocialScheduler:
             if not post.scheduled_time:
                 continue
 
-            try:
-                sched_str = str(post.scheduled_time).replace("Z", "").split(".")[0]
-                if len(sched_str) == 16:
-                    sched_str += ":00"
-                target_dt = datetime.fromisoformat(sched_str)
-                if target_dt > datetime.now():
-                    continue
-            except Exception:
-                if str(post.scheduled_time) > now_iso:
-                    continue
+            if not is_post_due(post.scheduled_time):
+                continue
 
             # Check daily upload limit
             if post.target_platform == Platform.INSTAGRAM.value:
@@ -493,19 +515,13 @@ def check_and_upload_due_posts(db=None):
         return []
 
     scheduled_posts = db.get_posts(status=PostStatus.SCHEDULED.value)
-    now_local = datetime.now()
-    now_utc = datetime.utcnow()
     uploaded = []
 
     for post in scheduled_posts:
         if not post.scheduled_time:
             continue
         try:
-            sched_str = str(post.scheduled_time).replace("Z", "").split(".")[0]
-            if len(sched_str) == 16:
-                sched_str += ":00"
-            target_dt = datetime.fromisoformat(sched_str)
-            if target_dt <= now_local or target_dt <= now_utc:
+            if is_post_due(post.scheduled_time):
                 ok, rid, msg = execute_post_upload(post.id, db=db)
                 uploaded.append({"post_id": post.id, "success": ok, "remote_id": rid, "message": msg})
         except Exception as e:
