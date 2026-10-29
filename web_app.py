@@ -669,15 +669,23 @@ def api_upload():
                     due_now_pids.append(pid)
 
         if due_now_pids:
-            def _bg_execute(pids, d):
-                for pid in pids:
+            if IS_VERCEL:
+                for pid in due_now_pids:
                     try:
                         from app.modules.scheduler import execute_post_upload
-                        execute_post_upload(pid, db=d)
+                        execute_post_upload(pid, db=current_db)
                     except Exception as ex:
-                        logger.error(f"[api_upload] BG upload error for #{pid}: {ex}")
+                        logger.error(f"[api_upload] Vercel upload error for #{pid}: {ex}")
+            else:
+                def _bg_execute(pids, d):
+                    for pid in pids:
+                        try:
+                            from app.modules.scheduler import execute_post_upload
+                            execute_post_upload(pid, db=d)
+                        except Exception as ex:
+                            logger.error(f"[api_upload] BG upload error for #{pid}: {ex}")
 
-            threading.Thread(target=_bg_execute, args=(list(due_now_pids), current_db), daemon=True).start()
+                threading.Thread(target=_bg_execute, args=(list(due_now_pids), current_db), daemon=True).start()
 
         created_events = []
         if current_db:

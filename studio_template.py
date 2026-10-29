@@ -582,7 +582,11 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                         Har scheduled post ka exact <strong>Date</strong>, <strong>Day</strong>, <strong>Time</strong> aur <strong>Waqt (Subah/Dopahar/Sham/Raat)</strong> yahan show hota hai.
                     </p>
                 </div>
-                <button class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" onclick="loadCalendarFeed()">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="clearFailedEvents()" title="Clear old failed posts from timeline">
+                        <i class="fa-solid fa-trash-can me-1"></i> Clear Failed
+                    </button>
+                    <button class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" onclick="loadCalendarFeed()">
                     <i class="fa-solid fa-rotate me-1"></i> Refresh Calendar
                 </button>
             </div>
@@ -1375,6 +1379,13 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                 v.pause();
                 v.src = "";
             }
+        }
+
+        function clearFailedEvents() {
+            let cur = getStoredEvents().filter(e => e.status !== 'FAILED');
+            setStoredEvents(cur);
+            loadCalendarFeed();
+            showToast("Old failed posts cleared from timeline!");
         }
 
         async function forcePost(id) {

@@ -529,14 +529,22 @@ def check_and_upload_due_posts(db=None):
         except Exception as e:
             logger.warning(f"[check_due] Error evaluating post #{post.id}: {e}")
 
+    IS_VERCEL = bool(os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"))
     if due_posts:
-        def _bg_runner(pids, d):
-            for pid in pids:
+        if IS_VERCEL:
+            for pid in due_posts:
                 try:
-                    execute_post_upload(pid, db=d)
+                    execute_post_upload(pid, db=db)
                 except Exception as ex:
-                    logger.error(f"[check_due] BG execution error on post #{pid}: {ex}")
+                    logger.error(f"[check_due] Vercel inline error on post #{pid}: {ex}")
+        else:
+            def _bg_runner(pids, d):
+                for pid in pids:
+                    try:
+                        execute_post_upload(pid, db=d)
+                    except Exception as ex:
+                        logger.error(f"[check_due] BG execution error on post #{pid}: {ex}")
 
-        threading.Thread(target=_bg_runner, args=(due_posts, db), daemon=True).start()
+            threading.Thread(target=_bg_runner, args=(due_posts, db), daemon=True).start()
 
     return due_posts
