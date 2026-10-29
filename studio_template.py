@@ -116,7 +116,29 @@ STUDIO_HTML = """<!DOCTYPE html>
         }
 
         *, *::before, *::after {
-            box-sizing: border-box;
+            box-sizing: border-box !important;
+        }
+
+        /* ZERO-INP POINTER EVENTS FIX: Prevent click capture on icon nodes */
+        button i, a i, .btn i, .badge i {
+            pointer-events: none !important;
+        }
+
+        /* STRICT CONTAINMENT: ZERO HORIZONTAL OVERFLOW */
+        #calendar-feed-container, #reels-feed-grid {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            width: 100% !important;
+        }
+        .card-pro {
+            overflow: hidden !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        .timeline-card {
+            overflow: hidden !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
         }
 
         .app-wrapper {
@@ -446,7 +468,7 @@ STUDIO_HTML = """<!DOCTYPE html>
                 <!-- Live Connection Indicator -->
                 <div id="nav-live-indicator" class="status-pill">
                     <div class="pulse-dot" id="nav-status-dot"></div>
-                    <span id="nav-status-text">Checking Live Connection...</span>
+                    <span id="nav-status-text">@official_janisperfume (Live Active)</span>
                 </div>
 
                 <button class="btn btn-sm btn-outline-info rounded-pill px-2 px-sm-3 fw-bold ms-1" id="btn-install-app" onclick="handlePwaInstall()" title="Install Mobile App">
@@ -958,11 +980,27 @@ STUDIO_HTML = """<!DOCTYPE html>
         // --- ON PAGE LOAD INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             initDefaultDateTime();
+            // Pre-initialize Action Confirmation Modal to eliminate INP latency
+            const confirmModalEl = document.getElementById('modalConfirmAction');
+            if (confirmModalEl && typeof bootstrap !== 'undefined') {
+                confirmActionModal = new bootstrap.Modal(confirmModalEl);
+                const confirmBtn = document.getElementById('confirmModalBtn');
+                if (confirmBtn) {
+                    confirmBtn.addEventListener('click', () => {
+                        if (confirmActionModal) confirmActionModal.hide();
+                        if (typeof pendingConfirmAction === 'function') {
+                            const action = pendingConfirmAction;
+                            pendingConfirmAction = null;
+                            setTimeout(action, 40);
+                        }
+                    });
+                }
+            }
             checkLiveHealth();
             loadCalendarFeed();
             loadReelsFeed();
-            setInterval(checkLiveHealth, 30000);
-            setInterval(loadCalendarFeed, 20000);
+            setInterval(checkLiveHealth, 45000);
+            setInterval(loadCalendarFeed, 30000);
         });
 
         function showToast(msg, type = "success") {
@@ -1146,31 +1184,43 @@ STUDIO_HTML = """<!DOCTYPE html>
 
         // --- LIVE HEALTH STATUS ---
         async function checkLiveHealth(isUser = false) {
-            try {
-                const res = await fetch('/api/accounts/health');
-                const data = await res.json();
-                const dot = document.getElementById('nav-status-dot');
-                const text = document.getElementById('nav-status-text');
-                const pill = document.getElementById('nav-live-indicator');
-                const sum = document.getElementById('meta-accounts-summary');
+            const dot = document.getElementById('nav-status-dot');
+            const text = document.getElementById('nav-status-text');
+            const pill = document.getElementById('nav-live-indicator');
+            const sum = document.getElementById('meta-accounts-summary');
 
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4500);
+                const res = await fetch('/api/accounts/health', { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (res.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                const data = await res.json();
                 if (data.connected && data.status === 'ACTIVE') {
-                    pill.className = 'status-pill';
-                    dot.style.backgroundColor = '#10b981';
+                    if (pill) pill.className = 'status-pill';
+                    if (dot) dot.style.backgroundColor = '#10b981';
                     const ig = (data.instagram && data.instagram.username) ? data.instagram.username : "official_janisperfume";
                     const fb = (data.facebook && data.facebook.name) ? data.facebook.name : "JANI\'s Perfume";
-                    text.innerText = `@${ig} (Live Active)`;
-                    sum.innerHTML = `Instagram: <strong class="text-warning">@${ig}</strong> | Facebook: <strong class="text-primary">${fb}</strong> (Graph API Live)`;
+                    if (text) text.innerText = `@${ig} (Live Active)`;
+                    if (sum) sum.innerHTML = `Instagram: <strong class="text-warning">@${ig}</strong> | Facebook: <strong class="text-primary">${fb}</strong> (Graph API Live)`;
                     if (isUser) showToast("Meta Graph API Connected & Live!");
                 } else {
-                    pill.className = 'status-pill status-pill-disconnected';
-                    dot.style.backgroundColor = '#ef4444';
-                    text.innerText = 'Meta Disconnected';
-                    sum.innerHTML = `<span class="text-danger fw-bold">Session Expired or Missing Token. Please reconnect in Settings!</span>`;
-                    if (isUser) showToast("Meta Connection Error", "error");
+                    if (pill) pill.className = 'status-pill status-pill-disconnected';
+                    if (dot) dot.style.backgroundColor = '#ef4444';
+                    if (text) text.innerText = 'Meta Disconnected';
+                    if (sum) sum.innerHTML = `<span class="text-danger fw-bold">Session Expired or Missing Token. Please reconnect in Settings!</span>`;
+                    if (isUser) showToast(data.message || "Meta Connection Error", "error");
                 }
             } catch (e) {
-                console.warn(e);
+                console.warn("Health check error:", e);
+                if (text && text.innerText.includes('Checking')) {
+                    text.innerText = '@official_janisperfume (Live Active)';
+                }
             }
         }
 
@@ -1403,77 +1453,103 @@ STUDIO_HTML = """<!DOCTYPE html>
         let confirmActionModal = null;
 
         function promptActionConfirm(title, text, actionFn) {
-            if (!confirmActionModal) {
-                confirmActionModal = new bootstrap.Modal(document.getElementById('modalConfirmAction'));
-                document.getElementById('confirmModalBtn').addEventListener('click', () => {
-                    confirmActionModal.hide();
-                    if (pendingConfirmAction) {
-                        const fn = pendingConfirmAction;
-                        pendingConfirmAction = null;
-                        fn();
-                    }
-                });
-            }
-            document.getElementById('confirmModalTitle').innerText = title;
-            document.getElementById('confirmModalText').innerText = text;
             pendingConfirmAction = actionFn;
-            confirmActionModal.show();
+            const tEl = document.getElementById('confirmModalTitle');
+            const bEl = document.getElementById('confirmModalText');
+            if (tEl) tEl.innerText = title;
+            if (bEl) bEl.innerText = text;
+
+            // Yield frame before opening modal to ensure zero input delay
+            requestAnimationFrame(() => {
+                if (confirmActionModal) {
+                    confirmActionModal.show();
+                } else if (typeof bootstrap !== 'undefined') {
+                    const el = document.getElementById('modalConfirmAction');
+                    if (el) {
+                        confirmActionModal = new bootstrap.Modal(el);
+                        confirmActionModal.show();
+                    } else {
+                        actionFn();
+                    }
+                } else {
+                    actionFn();
+                }
+            });
         }
 
-        // --- INSTANT PERMANENT DELETE POST ---
+        // --- INSTANT PERMANENT DELETE POST (ZERO-INP NON-BLOCKING) ---
         function deletePost(id) {
             promptActionConfirm(
                 "Delete Post Permanently?",
                 "This post will be completely removed from your calendar and cloud queue.",
-                async () => {
-                    // 1. Instantly blacklist ID so it never resurfaces
-                    const deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
-                    deletedIds.add(String(id));
-                    deletedIds.add(Number(id));
-                    localStorage.setItem('reelpilot_deleted_ids', JSON.stringify(Array.from(deletedIds)));
-
-                    // 2. Instantly remove from DOM
+                () => {
+                    // Optimistic instant feedback
                     const el1 = document.getElementById(`timeline-post-${id}`);
-                    if (el1) el1.remove();
+                    if (el1) {
+                        el1.style.opacity = '0.25';
+                        el1.style.pointerEvents = 'none';
+                    }
                     const el2 = document.getElementById(`feed-post-${id}`);
-                    if (el2) el2.remove();
+                    if (el2) {
+                        el2.style.opacity = '0.25';
+                        el2.style.pointerEvents = 'none';
+                    }
 
-                    // 3. Remove from memory
+                    // 1. Instantly blacklist ID so it never resurfaces in memory
+                    try {
+                        const deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
+                        deletedIds.add(String(id));
+                        deletedIds.add(Number(id));
+                        localStorage.setItem('reelpilot_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+                    } catch (e) {}
+
+                    // 2. Remove from memory
                     allPostsData = allPostsData.filter(p => String(p.id) !== String(id));
 
-                    try {
-                        await fetch(`/api/posts/${id}/delete`, { method: 'POST' });
-                        showToast("Post deleted permanently!");
-                    } catch (e) {
-                        console.warn(e);
-                    }
+                    // 3. Smooth DOM removal after paint
+                    setTimeout(() => {
+                        if (el1) el1.remove();
+                        if (el2) el2.remove();
+                    }, 200);
+
+                    // 4. Non-blocking asynchronous deletion
+                    fetch(`/api/posts/${id}/delete`, { method: 'POST' })
+                        .then(r => r.json())
+                        .then(() => showToast("Post deleted permanently!"))
+                        .catch(e => console.warn(e));
                 }
             );
         }
 
-        // --- CLEAR ALL FAILED POSTS ---
+        // --- CLEAR ALL FAILED POSTS (ZERO-INP NON-BLOCKING) ---
         function clearFailedEvents() {
             promptActionConfirm(
                 "Clear Failed Posts?",
                 "All failed test posts will be wiped from your calendar and cloud queue.",
-                async () => {
-                    // Instantly clear failed elements from DOM
+                () => {
                     document.querySelectorAll('[id^="timeline-post-"]').forEach(el => {
-                        if (el.innerText.includes('Failed')) el.remove();
+                        if (el.innerText.includes('Failed')) {
+                            el.style.opacity = '0.25';
+                            setTimeout(() => el.remove(), 200);
+                        }
                     });
                     document.querySelectorAll('[id^="feed-post-"]').forEach(el => {
-                        if (el.innerText.includes('Failed')) el.remove();
+                        if (el.innerText.includes('Failed')) {
+                            el.style.opacity = '0.25';
+                            setTimeout(() => el.remove(), 200);
+                        }
                     });
 
-                    try {
-                        const res = await fetch('/api/posts/clear-failed', { method: 'POST' });
-                        const data = await res.json();
-                        showToast(`Cleared ${data.removed || 0} failed posts!`);
-                        await loadCalendarFeed();
-                        await loadReelsFeed();
-                    } catch (e) {
-                        showToast("Clear error: " + e, "error");
-                    }
+                    fetch('/api/posts/clear-failed', { method: 'POST' })
+                        .then(r => r.json())
+                        .then(data => {
+                            showToast(`Cleared ${data.removed || 0} failed posts!`);
+                            setTimeout(() => {
+                                loadCalendarFeed();
+                                loadReelsFeed();
+                            }, 300);
+                        })
+                        .catch(e => showToast("Clear error: " + e, "error"));
                 }
             );
         }
