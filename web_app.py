@@ -34,7 +34,7 @@ try:
     from app.modules.scheduler import SocialScheduler
 except Exception:
     SocialScheduler = None
-from app.modules.caption_generator import caption_generator
+from app.modules.caption_generator import caption_generator, append_brand_footer
 from app.modules.uploaders import MetaUploader, TikTokUploader
 from app.modules.audio_fetcher import audio_service
 from app.modules.storage_service import storage_service
@@ -355,7 +355,7 @@ def api_ai_generate_luxury_copy():
         )
         return jsonify({
             "success": True,
-            "caption": cap,
+            "caption": append_brand_footer(cap),
             "hashtags": tags,
             "sound_vibe": vibe
         })
@@ -632,7 +632,7 @@ def api_upload():
         else:
             post_status = PostStatus.QUEUED.value
 
-        final_caption = caption or f"🌸 Luxury Fragrance Experience from {config_manager.config.brand_name}!"
+        final_caption = append_brand_footer(caption or f"🌸 Luxury Fragrance Experience from {config_manager.config.brand_name}!")
         final_hashtags = hashtags or "#JanisPerfume #Luxury #Fragrance #Trending"
 
         current_db = get_db()

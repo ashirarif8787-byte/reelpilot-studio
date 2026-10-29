@@ -9,6 +9,11 @@ PERMANENT_META_TOKEN = "EAAZATAUGR6T0BSZCvsRTCqnkWl4PI0cJI5YvHcAEtlEp96JB59RSTGd
 PERMANENT_FB_PAGE_ID = "800869286434757"
 PERMANENT_IG_ID = "17841423338066933"
 PERMANENT_BRAND_NAME = "JANI's Perfume"
+PERMANENT_BRAND_WEBSITE = "janisperfumes.com"
+PERMANENT_BRAND_WHATSAPP = "03134454899"
+PERMANENT_BRAND_FOOTER = """🌐 𝐖𝐞𝐛𝐬𝐢𝐭𝐞 𝐂𝐡𝐞𝐜𝐤𝐨𝐮𝐭: janisperfumes.com
+💬 𝐏𝐫𝐞𝐟𝐞𝐫 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩: 03134454899
+📩 𝐒𝐞𝐧𝐝 𝐮𝐬 𝐚 𝐃𝐌 𝐭𝐨 𝐨𝐫𝐝𝐞𝐫 𝐝𝐢𝐫𝐞𝐜𝐭𝐥𝐲!"""
 PERMANENT_APP_ID = "1780114720418109"
 PERMANENT_APP_SECRET = "6af61d4174e0d667bbe5d022c6f32b3b"
 
@@ -24,6 +29,9 @@ class AppConfig:
     openai_model: str = "gpt-4o-mini"
     ai_engine: str = "auto"  # "auto", "gemini", "openai"
     brand_name: str = PERMANENT_BRAND_NAME
+    brand_website: str = PERMANENT_BRAND_WEBSITE
+    brand_whatsapp: str = PERMANENT_BRAND_WHATSAPP
+    brand_footer: str = PERMANENT_BRAND_FOOTER
     
     # Social Media API Credentials (Permanent Defaults for JANI's Perfume)
     meta_access_token: str = PERMANENT_META_TOKEN

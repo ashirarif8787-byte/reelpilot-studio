@@ -498,7 +498,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
 
                     <!-- Custom Caption & Hashtags -->
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-white mb-1">Generated Luxury Post Description (Review or Edit)</label>
+                        <label class="form-label small fw-bold text-white mb-1 d-flex justify-content-between align-items-center"><span>Generated Luxury Post Description (Review or Edit)</span><span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0"><i class="fa-solid fa-link me-1"></i> Auto-Appends Website & WhatsApp Links</span></label>
                         <textarea id="post-caption-input" class="form-control" rows="4" placeholder="Your luxury sales copy will appear here..."></textarea>
                     </div>
 

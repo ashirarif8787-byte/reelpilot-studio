@@ -27,6 +27,20 @@ FALLBACK_TAGS = {
 }
 
 
+
+OFFICIAL_BRAND_FOOTER = """🌐 𝐖𝐞𝐛𝐬𝐢𝐭𝐞 𝐂𝐡𝐞𝐜𝐤𝐨𝐮𝐭: janisperfumes.com
+💬 𝐏𝐫𝐞𝐟𝐞𝐫 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩: 03134454899
+📩 𝐒𝐞𝐧𝐝 𝐮𝐬 𝐚 𝐃𝐌 𝐭𝐨 𝐨𝐫𝐝𝐞𝐫 𝐝𝐢𝐫𝐞𝐜𝐭𝐥𝐲!"""
+
+def append_brand_footer(caption: str) -> str:
+    """Ensures official brand checkout & WhatsApp contact links are present in every caption."""
+    caption = (caption or "").strip()
+    if not caption:
+        return OFFICIAL_BRAND_FOOTER
+    if "janisperfumes.com" in caption or "03134454899" in caption:
+        return caption
+    return f"{caption}\n\n{OFFICIAL_BRAND_FOOTER}"
+
 class DualAICaptionGenerator:
     def __init__(self):
         pass
@@ -241,7 +255,7 @@ class DualAICaptionGenerator:
         if not hashtags:
             hashtags = " ".join(FALLBACK_TAGS.get(platform, FALLBACK_TAGS["instagram"]))
 
-        return caption, hashtags, sound_vibe
+        return append_brand_footer(caption), hashtags, sound_vibe
 
     def _generate_smart_fallback(self, filename_hint: str, brand: str, platform: str) -> Tuple[str, str, Optional[str]]:
         """Intelligent offline fallback with Brand and Product details."""
@@ -258,7 +272,7 @@ class DualAICaptionGenerator:
             tags.insert(1, f"#{clean_prod}")
 
         hashtag_str = " ".join(tags[:8])
-        return caption, hashtag_str, "Luxury Lo-Fi"
+        return append_brand_footer(caption), hashtag_str, "Luxury Lo-Fi"
 
     def generate_perfume_copy(
         self,
@@ -297,7 +311,7 @@ class DualAICaptionGenerator:
             "It must sound like a prestigious luxury perfume house.\n"
             "Format your answer EXACTLY as:\n"
             "HOOK: [1 stunning luxury curiosity hook with emojis 👑, ✨, 💎]\n"
-            f"DESCRIPTION: [3-4 sentences describing the alluring olfactory journey of '{product_name}'. Explicitly mention the '{volume_ml}' bottle size, 14+ hours beast-mode longevity, projection, and compliment factor. Mention the offer '{price_offer}'. End with a strong Call-to-Action to DM or WhatsApp to order!]\n"
+            f"DESCRIPTION: [3-4 sentences describing the alluring olfactory journey of '{product_name}'. Explicitly mention the '{volume_ml}' bottle size, 14+ hours beast-mode longevity, projection, and compliment factor. Mention the offer '{price_offer}'. End with this exact checkout and contact block:\n🌐 𝐖𝐞𝐛𝐬𝐢𝐭𝐞 𝐂𝐡𝐞𝐜𝐤𝐨𝐮𝐭: janisperfumes.com\n💬 𝐏𝐫𝐞𝐟𝐞𝐫 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩: 03134454899\n📩 𝐒𝐞𝐧𝐝 𝐮𝐬 𝐚 𝐃𝐌 𝐭𝐨 𝐨𝐫𝐝𝐞𝐫 𝐝𝐢𝐫𝐞𝐜𝐭𝐥𝐲!]\n"
             "SOUND_VIBE: [2-word luxury sound vibe, e.g. Royal Amber or Luxury Lo-Fi]\n"
             f"HASHTAGS: [Exactly 10 to 12 authentic, trending perfume hashtags targeting fragrance lovers, e.g. #{clean_brand} #{clean_prod} #{clean_vol}Perfume #LuxuryFragrance #PerfumesPakistan #LongLastingScent #OudLovers #ScentOfTheDay #KarachiPerfumes #LahoreShopping #EauDeParfum]"
         )
@@ -369,7 +383,7 @@ class DualAICaptionGenerator:
             "#PakistaniBrands",
             "#EauDeParfum"
         ]
-        return caption, " ".join(tags), "Royal Velvet"
+        return append_brand_footer(caption), " ".join(tags), "Royal Velvet"
 
 
 # Global singleton
