@@ -1,0 +1,16 @@
+name: 24/7 Autonomous Post Scheduler Trigger
+
+on:
+  schedule:
+    # Runs every 10 minutes, 24/7, completely independent of user laptop or internet
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping_scheduler:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Due Scheduled Posts on Vercel
+        run: |
+          response=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X GET "https://reelpilot-studio.vercel.app/api/cron/check-due")
+          echo "$response"

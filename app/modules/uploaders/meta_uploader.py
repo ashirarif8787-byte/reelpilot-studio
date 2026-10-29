@@ -291,9 +291,11 @@ class MetaUploader(BaseUploader):
             if os.path.exists(photo_path_or_url):
                 with open(photo_path_or_url, "rb") as f:
                     resp = requests.post(url, data=payload, files={"source": f}, timeout=60)
-            else:
+            elif photo_path_or_url.startswith("http://") or photo_path_or_url.startswith("https://"):
                 payload["url"] = photo_path_or_url
                 resp = requests.post(url, data=payload, timeout=60)
+            else:
+                return False, None, None, f"Local photo '{os.path.basename(photo_path_or_url)}' no longer exists on server. Please re-upload."
 
             data = resp.json()
             self._check_for_token_expiration(data)
@@ -338,9 +340,12 @@ class MetaUploader(BaseUploader):
                 if os.path.exists(p):
                     with open(p, "rb") as f:
                         resp = requests.post(url, data=payload, files={"source": f}, timeout=60)
-                else:
+                elif p.startswith("http://") or p.startswith("https://"):
                     payload["url"] = p
                     resp = requests.post(url, data=payload, timeout=60)
+                else:
+                    logger.warning(f"[MetaUploader] Skipped expired/invalid photo path: {p}")
+                    continue
 
                 data = resp.json()
                 self._check_for_token_expiration(data)
@@ -397,9 +402,11 @@ class MetaUploader(BaseUploader):
                 if pub:
                     photo_url = pub
                 else:
-                    return False, None, None, f"Could not generate public URL for {os.path.basename(photo_url)}. Configure Cloudflare R2."
+                    return False, None, None, f"Could not generate public URL for {os.path.basename(photo_url)}."
             except Exception as se:
                 return False, None, None, f"Storage upload error: {se}"
+        elif not photo_url.startswith("http://") and not photo_url.startswith("https://"):
+            return False, None, None, f"Local media '{os.path.basename(photo_url)}' is no longer available on server. Please re-upload."
 
         full_caption = f"{caption}\n\n{hashtags}".strip()
         try:

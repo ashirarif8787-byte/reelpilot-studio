@@ -99,7 +99,18 @@ class StorageService:
             except Exception as ie:
                 logger.warning(f"[Storage] FreeImageHost upload error: {ie}. Trying next CDN...")
 
-        # 3. Uguu Direct Binary File CDN (Supports Images & Videos up to 100MB)
+        # 3. Catbox Permanent Direct Upload (Permanent direct binary storage for images & videos)
+        try:
+            with open(file_path, "rb") as f:
+                resp = requests.post("https://catbox.moe/user/api.php", data={"reqtype": "fileupload"}, files={"fileToUpload": f}, timeout=30)
+                if resp.status_code in [200, 500] and resp.text.strip().startswith("http"):
+                    direct_url = resp.text.strip()
+                    logger.info(f"✅ [Storage] Direct Media CDN URL generated via Catbox: {direct_url}")
+                    return direct_url
+        except Exception as ce:
+            logger.warning(f"[Storage] Catbox upload error: {ce}")
+
+        # 4. Uguu Direct Binary File CDN (Supports Images & Videos up to 100MB)
         try:
             with open(file_path, "rb") as f:
                 resp = requests.post("https://uguu.se/upload.php", files={"files[]": f}, timeout=30)
@@ -113,18 +124,7 @@ class StorageService:
         except Exception as ue:
             logger.warning(f"[Storage] Uguu upload error: {ue}. Trying next fallback...")
 
-        # 4. Catbox Direct Upload
-        try:
-            with open(file_path, "rb") as f:
-                resp = requests.post("https://catbox.moe/user/api.php", data={"reqtype": "fileupload"}, files={"fileToUpload": f}, timeout=30)
-                if resp.status_code == 200 and resp.text.startswith("http"):
-                    direct_url = resp.text.strip()
-                    logger.info(f"✅ [Storage] Direct Media CDN URL generated via Catbox: {direct_url}")
-                    return direct_url
-        except Exception as ce:
-            logger.warning(f"[Storage] Catbox upload error: {ce}")
-
-        # 5. Vercel Public Endpoint Fallback
+        # 5. Vercel Public Endpoint Fallback (for immediate streaming if running on server)
         try:
             rel_name = os.path.basename(file_path)
             vercel_url = f"https://reelpilot-studio.vercel.app/api/media/{rel_name}"

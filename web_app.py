@@ -15,7 +15,7 @@ import time
 import json
 import threading
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import Flask, request, jsonify, render_template_string, send_from_directory
 from werkzeug.utils import secure_filename
 
@@ -236,6 +236,7 @@ def api_calendar():
         logger.warning(f"Error checking due posts in calendar: {ce}")
 
     posts = current_db.get_posts(limit=150) if current_db else []
+    seen_ids = set()
     calendar_events = []
     for p in posts:
         if p.scheduled_time or p.status in [PostStatus.SCHEDULED.value, PostStatus.QUEUED.value, PostStatus.UPLOADING.value, PostStatus.UPLOADED.value, PostStatus.FAILED.value]:
@@ -244,6 +245,38 @@ def api_calendar():
             d["scheduled_countdown"] = d["dt_info"]["countdown"]
             d["cover_url"] = extract_cover_url(p)
             calendar_events.append(d)
+            seen_ids.add(p.id)
+
+    # Seamlessly merge cloud queue for Vercel persistence across container recycles
+    try:
+        from app.modules.cloud_queue import cloud_queue
+        cloud_posts = cloud_queue.get_all_posts()
+        for cp in cloud_posts:
+            cid = cp.get("id")
+            if cid and cid not in seen_ids:
+                m_urls = cp.get("media_urls", [])
+                cover = m_urls[0] if m_urls else ""
+                f_path = json.dumps(m_urls) if len(m_urls) > 1 else cover
+                d = {
+                    "id": cid,
+                    "target_platform": cp.get("target_platform", "instagram"),
+                    "caption": cp.get("caption", ""),
+                    "hashtags": cp.get("hashtags", ""),
+                    "media_type": cp.get("media_type", "image"),
+                    "file_path": f_path,
+                    "status": cp.get("status", "SCHEDULED"),
+                    "scheduled_time": cp.get("scheduled_time"),
+                    "created_at": cp.get("created_at"),
+                    "error_message": cp.get("error_message"),
+                    "remote_url": cp.get("remote_url"),
+                    "cover_url": cover
+                }
+                d["dt_info"] = format_post_datetime(cp.get("scheduled_time") or cp.get("created_at"))
+                d["scheduled_countdown"] = d["dt_info"]["countdown"]
+                calendar_events.append(d)
+                seen_ids.add(cid)
+    except Exception as cqe:
+        logger.warning(f"Error merging cloud queue posts into calendar: {cqe}")
 
     calendar_events.sort(key=lambda x: str(x.get("scheduled_time") or x.get("created_at") or ""), reverse=True)
     return jsonify({"success": True, "events": calendar_events})
@@ -533,7 +566,61 @@ def api_delete_post(post_id):
         except Exception as fe:
             logger.warning(f"Error cleaning local file for #{post_id}: {fe}")
     success = current_db.delete_post(post_id)
+    try:
+        from app.modules.cloud_queue import cloud_queue
+        cloud_queue.delete_post(post_id)
+    except Exception as cde:
+        logger.warning(f"Cloud queue delete error: {cde}")
     return jsonify({"success": success})
+
+@app.route("/api/posts/clear-failed", methods=["POST"])
+def api_clear_failed():
+    current_db = get_db()
+    removed_db = 0
+    if current_db:
+        posts = current_db.get_posts(limit=200)
+        for p in posts:
+            if p.status == PostStatus.FAILED.value:
+                current_db.delete_post(p.id)
+                removed_db += 1
+    from app.modules.cloud_queue import cloud_queue
+    removed_cloud = cloud_queue.clear_failed()
+    return jsonify({"success": True, "removed": max(removed_db, removed_cloud)})
+
+@app.route("/api/cron/check-due", methods=["GET", "POST"])
+def api_cron_check_due():
+    current_db = get_db()
+    from app.modules.cloud_queue import cloud_queue
+    due_posts = cloud_queue.get_due_posts()
+    logger.info(f"⏰ [Cron] Triggered! Found {len(due_posts)} due posts in cloud queue.")
+
+    results = []
+    from app.modules.scheduler import execute_post_upload
+
+    for p in due_posts:
+        pid = p.get("id")
+        plat = p.get("target_platform", "instagram")
+        try:
+            cloud_queue.update_post_status(pid, "UPLOADING")
+            success, remote_id, err = execute_post_upload(pid, db=current_db)
+            results.append({
+                "post_id": pid,
+                "platform": plat,
+                "success": success,
+                "remote_id": remote_id,
+                "error": err
+            })
+        except Exception as ex:
+            logger.error(f"[Cron] Error publishing post #{pid}: {ex}")
+            cloud_queue.update_post_status(pid, "FAILED", error_message=str(ex))
+            results.append({"post_id": pid, "platform": plat, "success": False, "error": str(ex)})
+
+    return jsonify({
+        "success": True,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "processed_count": len(due_posts),
+        "results": results
+    })
 
 @app.route("/api/calendar/restore", methods=["POST"])
 def api_calendar_restore():
@@ -716,6 +803,69 @@ def api_upload():
                         status=post_status
                     )
                     created_post_ids.append(post_id)
+
+        # Sync scheduled posts to persistent CloudQueue (guarantees persistence across Vercel cold restarts)
+        try:
+            from app.modules.cloud_queue import cloud_queue
+            for idx, pid in enumerate(created_post_ids):
+                plat = platforms_to_save[idx] if idx < len(platforms_to_save) else platforms_to_save[0]
+                cloud_queue.add_scheduled_post({
+                    "id": pid,
+                    "target_platform": plat,
+                    "caption": final_caption,
+                    "hashtags": final_hashtags,
+                    "scheduled_time": post_sched_time,
+                    "media_type": media_type,
+                    "media_urls": p_paths,
+                    "status": post_status,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                })
+        except Exception as cqe:
+            logger.error(f"[api_upload] CloudQueue sync error: {cqe}")
+
+        # Facebook Native Cloud Scheduling (Meta Page API schedules directly on Meta servers)
+        if schedule_mode == "calendar" and post_sched_time and "facebook" in platforms_to_save:
+            try:
+                from app.modules.scheduler import parse_scheduled_datetime
+                sched_dt = parse_scheduled_datetime(post_sched_time)
+                if sched_dt:
+                    diff_seconds = int(sched_dt.timestamp() - time.time())
+                    if 600 <= diff_seconds <= 6480000:
+                        fb_pid = None
+                        for pid in created_post_ids:
+                            p_rec = current_db.get_post(pid) if current_db else None
+                            if p_rec and p_rec.target_platform == "facebook":
+                                fb_pid = pid
+                                break
+                        if fb_pid:
+                            from app.modules.uploaders.meta_uploader import MetaUploader
+                            mu = MetaUploader()
+                            fb_unix = int(sched_dt.timestamp())
+                            if media_type == "carousel" or len(p_paths) > 1:
+                                fb_ok, fb_id, fb_url, fb_err = mu.upload_facebook_carousel(
+                                    photo_paths_or_urls=p_paths,
+                                    caption=final_caption,
+                                    hashtags=final_hashtags,
+                                    scheduled_time=fb_unix
+                                )
+                            elif media_type == "image":
+                                fb_ok, fb_id, fb_url, fb_err = mu.upload_facebook_photo(
+                                    photo_path_or_url=p_paths[0],
+                                    caption=final_caption,
+                                    hashtags=final_hashtags,
+                                    scheduled_time=fb_unix
+                                )
+                            if fb_ok:
+                                logger.info(f"🚀 [Facebook Native] Post #{fb_pid} successfully scheduled on Meta servers! Remote ID: {fb_id}")
+                                if current_db:
+                                    current_db.update_post(fb_pid, status=PostStatus.SCHEDULED.value, remote_media_id=fb_id, remote_url=fb_url)
+                                try:
+                                    from app.modules.cloud_queue import cloud_queue
+                                    cloud_queue.update_post_status(fb_pid, "SCHEDULED", remote_id=fb_id, remote_url=fb_url)
+                                except Exception:
+                                    pass
+            except Exception as fb_sched_ex:
+                logger.warning(f"Facebook native schedule warning: {fb_sched_ex}")
 
         # 3. Background execution for instant uploads or due posts (Non-blocking!)
         due_now_pids = []

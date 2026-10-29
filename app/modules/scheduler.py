@@ -406,14 +406,35 @@ def execute_post_upload(post_id: int, db=None):
     if db is None:
         from app.database.db import DatabaseManager
         db = DatabaseManager()
-    if not db:
-        return False, None, "Database unavailable"
 
-    post = db.get_post(post_id)
+    post = db.get_post(post_id) if db else None
+    if not post:
+        try:
+            from app.modules.cloud_queue import cloud_queue
+            for item in cloud_queue.get_all_posts():
+                if str(item.get("id")) == str(post_id):
+                    from app.database.models import Post
+                    m_urls = item.get("media_urls", [])
+                    f_path = json.dumps(m_urls) if len(m_urls) > 1 else (m_urls[0] if m_urls else "")
+                    post = Post(
+                        id=int(item["id"]),
+                        file_path=f_path,
+                        file_hash="",
+                        target_platform=item.get("target_platform", "instagram"),
+                        media_type=item.get("media_type", "image"),
+                        caption=item.get("caption", ""),
+                        hashtags=item.get("hashtags", ""),
+                        status=item.get("status", "SCHEDULED")
+                    )
+                    break
+        except Exception as qe:
+            logger.warning(f"Cloud queue lookup exception: {qe}")
+
     if not post:
         return False, None, f"Post #{post_id} not found"
 
-    db.update_post(post.id, status=PostStatus.UPLOADING.value)
+    if db:
+        db.update_post(post.id, status=PostStatus.UPLOADING.value)
     
     from app.modules.uploaders.meta_uploader import MetaUploader
     from app.modules.uploaders.tiktok_uploader import TikTokUploader
@@ -483,51 +504,78 @@ def execute_post_upload(post_id: int, db=None):
 
         if success:
             now_str = datetime.now().isoformat()
-            db.update_post(
-                post.id,
-                status=PostStatus.UPLOADED.value,
-                uploaded_at=now_str,
-                remote_media_id=remote_id,
-                remote_url=remote_url,
-                error_message=None
-            )
-            db.log_event(post.id, post.target_platform, PostStatus.UPLOADED.value, f"Published live. Remote ID: {remote_id} | URL: {remote_url}")
-            logger.info(f"?? [Upload] Post #{post.id} published live to {post.target_platform}! Remote ID: {remote_id}")
+            if db:
+                db.update_post(
+                    post.id,
+                    status=PostStatus.UPLOADED.value,
+                    uploaded_at=now_str,
+                    remote_media_id=remote_id,
+                    remote_url=remote_url,
+                    error_message=None
+                )
+                db.log_event(post.id, post.target_platform, PostStatus.UPLOADED.value, f"Published live. Remote ID: {remote_id} | URL: {remote_url}")
+            try:
+                from app.modules.cloud_queue import cloud_queue
+                cloud_queue.update_post_status(post.id, "UPLOADED", remote_id=remote_id, remote_url=remote_url)
+            except Exception:
+                pass
+            logger.info(f"🚀 [Upload] Post #{post.id} published live to {post.target_platform}! Remote ID: {remote_id}")
             return True, remote_url or remote_id, "Uploaded successfully"
         else:
-            db.update_post(post.id, status=PostStatus.FAILED.value, error_message=err)
-            db.log_event(post.id, post.target_platform, PostStatus.FAILED.value, f"Upload error: {err}")
+            if db:
+                db.update_post(post.id, status=PostStatus.FAILED.value, error_message=err)
+                db.log_event(post.id, post.target_platform, PostStatus.FAILED.value, f"Upload error: {err}")
+            try:
+                from app.modules.cloud_queue import cloud_queue
+                cloud_queue.update_post_status(post.id, "FAILED", error_message=err)
+            except Exception:
+                pass
             logger.error(f"[Upload] Post #{post.id} failed: {err}")
             return False, None, err
     except Exception as e:
         err_msg = str(e)
-        db.update_post(post.id, status=PostStatus.FAILED.value, error_message=err_msg)
-        db.log_event(post.id, post.target_platform, PostStatus.FAILED.value, err_msg)
+        if db:
+            db.update_post(post.id, status=PostStatus.FAILED.value, error_message=err_msg)
+            db.log_event(post.id, post.target_platform, PostStatus.FAILED.value, err_msg)
+        try:
+            from app.modules.cloud_queue import cloud_queue
+            cloud_queue.update_post_status(post.id, "FAILED", error_message=err_msg)
+        except Exception:
+            pass
         logger.error(f"[Upload] Post #{post.id} exception: {err_msg}")
         return False, None, err_msg
 
 
 def check_and_upload_due_posts(db=None):
-    """Checks for all SCHEDULED posts that are due now and uploads them in the background."""
+    """Checks for all SCHEDULED posts that are due now (both in CloudQueue and SQLite) and uploads them."""
     if db is None:
         from app.database.db import DatabaseManager
         db = DatabaseManager()
-    if not db:
-        return []
 
-    scheduled_posts = db.get_posts(status=PostStatus.SCHEDULED.value)
     due_posts = []
 
-    for post in scheduled_posts:
-        if not post.scheduled_time:
-            continue
-        try:
-            if is_post_due(post.scheduled_time):
-                # Mark as UPLOADING right away so it isn't picked up multiple times
-                db.update_post(post.id, status=PostStatus.UPLOADING.value)
-                due_posts.append(post.id)
-        except Exception as e:
-            logger.warning(f"[check_due] Error evaluating post #{post.id}: {e}")
+    # 1. Cloud Queue Due Posts
+    try:
+        from app.modules.cloud_queue import cloud_queue
+        for cp in cloud_queue.get_due_posts():
+            if cp.get("id"):
+                due_posts.append(int(cp["id"]))
+    except Exception as cqe:
+        logger.warning(f"[check_due] Cloud queue check error: {cqe}")
+
+    # 2. SQLite Due Posts
+    if db:
+        scheduled_posts = db.get_posts(status=PostStatus.SCHEDULED.value)
+        for post in scheduled_posts:
+            if not post.scheduled_time:
+                continue
+            try:
+                if is_post_due(post.scheduled_time):
+                    db.update_post(post.id, status=PostStatus.UPLOADING.value)
+                    if post.id not in due_posts:
+                        due_posts.append(post.id)
+            except Exception as e:
+                logger.warning(f"[check_due] Error evaluating post #{post.id}: {e}")
 
     IS_VERCEL = bool(os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"))
     if due_posts:
@@ -545,6 +593,6 @@ def check_and_upload_due_posts(db=None):
                     except Exception as ex:
                         logger.error(f"[check_due] BG execution error on post #{pid}: {ex}")
 
-            threading.Thread(target=_bg_runner, args=(due_posts, db), daemon=True).start()
+            threading.Thread(target=_bg_runner, args=(list(due_posts), db), daemon=True).start()
 
     return due_posts

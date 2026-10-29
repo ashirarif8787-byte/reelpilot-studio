@@ -1276,6 +1276,25 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             container.innerHTML = html;
         }
 
+        async function clearFailedPosts() {
+            if (!confirm("Are you sure you want to clear all failed test posts from the calendar?")) return;
+            try {
+                // 1. Instantly remove from local browser storage
+                let cur = getStoredEvents().filter(e => e.status !== 'FAILED');
+                setStoredEvents(cur);
+
+                // 2. Call server to wipe from DB and CloudQueue
+                const res = await fetch('/api/posts/clear-failed', { method: 'POST' });
+                const d = await res.json();
+
+                showToast(`Cleared ${d.removed || 0} failed posts!`);
+                await loadCalendarFeed();
+                await loadReelsFeed();
+            } catch (e) {
+                showToast("Error clearing failed posts: " + e, "error");
+            }
+        }
+
         // --- REELS FEED & STATUS ---
         async function loadReelsFeed() {
             try {
