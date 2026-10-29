@@ -1,16 +1,4 @@
 {
-  "scheduled": [
-    {
-      "id": 999999,
-      "target_platform": "facebook",
-      "caption": "Test Cloud Sync",
-      "scheduled_time": "2026-10-30T10:00:00Z",
-      "status": "SCHEDULED",
-      "media_type": "image",
-      "media_urls": [
-        "https://iili.io/n8PvcDF.png"
-      ]
-    }
-  ],
+  "scheduled": [],
   "history": []
 }
