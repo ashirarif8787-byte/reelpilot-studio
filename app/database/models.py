@@ -46,3 +46,7 @@ class PostRecord:
     error_message: Optional[str] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
+
+
+# Backward compatibility alias
+Post = PostRecord

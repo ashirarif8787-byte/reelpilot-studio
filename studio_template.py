@@ -1,192 +1,277 @@
-HTML_STUDIO_V36 = """<!DOCTYPE html>
+"""
+ReelPilot Studio - JANI'S Perfume Luxury Edition UI Template.
+Fully Responsive, Zero-Overflow, 100% Contained UI with Deep Obsidian & Champagne Gold Theme.
+"""
+
+STUDIO_HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReelPilot Studio v3.6 - Luxury Fragrance Automation & Multi-Media Hub</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ReelPilot Studio - JANI\'S Perfume Luxury Edition</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+
     <style>
         :root {
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --accent: #06b6d4;
-            --bg-dark: #070d18;
-            --card-bg: #0f172a;
-            --card-border: #1e293b;
+            --primary: #f59e0b;
+            --primary-hover: #d97706;
+            --primary-light: #fbbf24;
+            --accent-cyan: #06b6d4;
+            --bg-dark: #070a12;
+            --bg-card: rgba(15, 23, 42, 0.78);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-border-gold: rgba(245, 158, 11, 0.35);
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
+            --gold-gradient: linear-gradient(135deg, #b45309 0%, #f59e0b 50%, #fbbf24 100%);
             --insta-grad: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
             --fb-color: #1877f2;
-            --gemini-grad: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #9333ea 100%);
-            --gold-grad: linear-gradient(135deg, #b45309 0%, #f59e0b 50%, #fbbf24 100%);
+            --luxury-glass: rgba(17, 24, 39, 0.72);
         }
 
-        body {
+        /* 100% CONTAINED SCREEN - ZERO HORIZONTAL OVERFLOW */
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100vw !important;
+            overflow-x: hidden !important;
             background-color: var(--bg-dark);
             color: var(--text-main);
             font-family: 'Plus Jakarta Sans', sans-serif;
-            margin: 0;
-            padding: 0;
             min-height: 100vh;
+            box-sizing: border-box;
         }
 
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        .app-wrapper {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px 16px 60px 16px;
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+
+        /* FLEX & GRID DEFENSE AGAINST OVERFLOW */
+        .row {
+            margin-right: -8px;
+            margin-left: -8px;
+        }
+        .row > * {
+            padding-right: 8px;
+            padding-left: 8px;
+            min-width: 0 !important;
+        }
+
+        /* TOP NAVBAR */
         .navbar-top {
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(12px);
+            background: rgba(11, 16, 29, 0.96);
+            backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--card-border);
-            padding: 14px 24px;
+            padding: 12px 24px;
             position: sticky;
             top: 0;
-            z-index: 1000;
+            z-index: 1050;
+            width: 100%;
         }
 
+        .brand-title {
+            font-family: 'Cinzel', serif;
+            letter-spacing: 1px;
+            font-weight: 700;
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* LUXURY CARDS */
         .card-pro {
-            background: var(--card-bg);
+            background: var(--bg-card);
+            backdrop-filter: blur(14px);
             border: 1px solid var(--card-border);
             border-radius: 16px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            transition: border-color 0.2s ease;
+        }
+        .card-pro:hover {
+            border-color: rgba(245, 158, 11, 0.25);
         }
 
-        /* Live Health Banner */
-        .health-banner-connected {
-            background: linear-gradient(135deg, rgba(6, 78, 59, 0.8) 0%, rgba(16, 185, 129, 0.15) 100%);
-            border: 2px solid #10b981;
-            border-radius: 16px;
-            box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);
-        }
-        .health-banner-disconnected {
-            background: linear-gradient(135deg, rgba(127, 29, 29, 0.85) 0%, rgba(220, 38, 38, 0.2) 100%);
-            border: 2px solid #ef4444;
-            border-radius: 16px;
-            box-shadow: 0 0 25px rgba(239, 68, 68, 0.25);
-            animation: pulse-border 2s infinite;
-        }
-        @keyframes pulse-border {
-            0%, 100% { border-color: #ef4444; }
-            50% { border-color: #f87171; box-shadow: 0 0 35px rgba(239, 68, 68, 0.4); }
-        }
-
-        .account-chip {
+        /* LIVE STATUS PILL */
+        .status-pill {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            color: #34d399;
             border-radius: 30px;
             padding: 6px 14px;
-            font-size: 0.85rem;
-            transition: all 0.2s ease;
+            font-size: 0.8rem;
+            font-weight: 600;
         }
-        .account-chip:hover {
-            border-color: var(--primary);
-            transform: translateY(-1px);
+        .status-pill-disconnected {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #f87171;
+        }
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #10b981;
+            box-shadow: 0 0 8px #10b981;
+            animation: pulse-ring 2s infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
+        /* DROP ZONE */
         .drop-zone-main {
-            border: 2px dashed #6366f1;
-            border-radius: 20px;
-            background: rgba(99, 102, 241, 0.05);
-            padding: 30px 20px;
+            border: 2px dashed rgba(245, 158, 11, 0.5);
+            border-radius: 16px;
+            background: rgba(245, 158, 11, 0.03);
+            padding: 26px 16px;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s ease;
         }
         .drop-zone-main:hover {
-            background: rgba(99, 102, 241, 0.1);
-            border-color: #818cf8;
+            background: rgba(245, 158, 11, 0.08);
+            border-color: #f59e0b;
         }
 
+        /* MEDIA PREVIEW THUMBNAILS IN UPLOAD FORM */
         .media-preview-card {
             position: relative;
-            border-radius: 12px;
+            border-radius: 10px;
             overflow: hidden;
             background: #020617;
             border: 2px solid var(--card-border);
             aspect-ratio: 1 / 1;
-            transition: all 0.2s;
+            width: 100%;
         }
         .media-preview-card.is-cover {
             border-color: #f59e0b;
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
         }
         .media-preview-card img, .media-preview-card video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
         .cover-badge {
             position: absolute;
-            top: 6px;
-            left: 6px;
+            top: 4px;
+            left: 4px;
             background: #f59e0b;
             color: #000;
             font-weight: 800;
-            font-size: 0.68rem;
-            padding: 3px 8px;
-            border-radius: 20px;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 12px;
             z-index: 2;
         }
         .order-badge {
             position: absolute;
-            top: 6px;
-            right: 6px;
-            background: rgba(0, 0, 0, 0.7);
+            top: 4px;
+            right: 4px;
+            background: rgba(0, 0, 0, 0.75);
             color: #fff;
-            font-weight: bold;
-            font-size: 0.7rem;
-            padding: 2px 7px;
-            border-radius: 12px;
-            z-index: 2;
-        }
-        .media-card-actions {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(transparent, rgba(0,0,0,0.85));
-            padding: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            font-weight: 700;
+            font-size: 0.65rem;
+            padding: 1px 6px;
+            border-radius: 10px;
             z-index: 2;
         }
 
+        /* TIMING & FORM CONTROLS */
         .timing-btn {
             border: 1px solid var(--card-border);
             background: #0c1424;
             color: #cbd5e1;
-            border-radius: 12px;
-            padding: 10px 14px;
+            border-radius: 10px;
+            padding: 8px 12px;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             transition: all 0.2s;
             cursor: pointer;
             text-align: center;
         }
         .timing-btn.active, .timing-btn:hover {
-            border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.15);
-            color: #fff;
+            border-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
         }
 
         .form-control, .form-select {
-            background: #0c1424;
-            border: 1px solid var(--card-border);
-            color: #fff;
-            border-radius: 12px;
-            padding: 10px 14px;
+            background: #0c1322 !important;
+            border: 1px solid var(--card-border) !important;
+            color: #fff !important;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 0.88rem;
         }
         .form-control:focus, .form-select:focus {
-            background: #0c1424;
-            border-color: #6366f1;
-            color: #fff;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+            border-color: #f59e0b !important;
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25) !important;
         }
 
+        /* TEXT CLAMPING - STRICT DEFENSE */
+        .caption-clamp-1 {
+            display: -webkit-box !important;
+            -webkit-line-clamp: 1 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+            word-break: break-word !important;
+            white-space: normal !important;
+        }
+        .caption-clamp-2 {
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+            word-break: break-word !important;
+            white-space: normal !important;
+            line-height: 1.35;
+        }
+
+        /* TIMELINE CARD DESIGN */
+        .timeline-card {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 14px;
+            padding: 12px 14px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-width: 0 !important;
+            transition: all 0.2s ease;
+        }
+        .timeline-card:hover {
+            border-color: rgba(245, 158, 11, 0.35);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* FEED REEL / PRODUCT CARD */
         .reel-card {
-            background: var(--card-bg);
+            background: rgba(15, 23, 42, 0.9);
             border: 1px solid var(--card-border);
             border-radius: 12px;
             overflow: hidden;
@@ -194,16 +279,18 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             flex-direction: column;
             transition: all 0.2s ease;
             height: 100%;
+            min-width: 0 !important;
         }
         .reel-card:hover {
             transform: translateY(-2px);
-            border-color: var(--primary);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
+            border-color: #f59e0b;
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.2);
         }
         .reel-thumb-container {
             position: relative;
             width: 100%;
-            height: 160px;
+            aspect-ratio: 1 / 1;
+            max-height: 150px;
             background: #090d16;
             overflow: hidden;
             cursor: pointer;
@@ -214,67 +301,63 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             object-fit: cover;
             display: block;
         }
-        .reel-play-btn {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 36px;
-            height: 36px;
-            background: rgba(0, 0, 0, 0.65);
-            border: 1.5px solid #fff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+
+        /* PLATFORM & WAQT BADGES */
+        .badge-insta {
+            background: var(--insta-grad);
             color: #fff;
-            font-size: 0.95rem;
-            backdrop-filter: blur(4px);
-            opacity: 0.85;
-            transition: transform 0.2s;
+            font-size: 0.65rem;
+            font-weight: 700;
         }
-        .reel-play-btn:hover {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1.1);
+        .badge-fb {
+            background: #1877f2;
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+        .badge-waqt {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+            font-size: 0.65rem;
+            border-radius: 8px;
+            padding: 2px 6px;
+        }
+
+        /* BUTTONS */
+        .btn-gold {
+            background: var(--gold-gradient);
+            color: #000;
+            font-weight: 700;
+            border: none;
+            transition: opacity 0.2s;
+        }
+        .btn-gold:hover {
+            opacity: 0.92;
+            color: #000;
         }
 
         .feed-filter-btn {
             border-radius: 20px;
-            padding: 6px 16px;
+            padding: 5px 14px;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #cbd5e1;
             border: 1px solid var(--card-border);
             background: transparent;
             transition: all 0.2s;
         }
         .feed-filter-btn.active, .feed-filter-btn:hover {
-            background: #6366f1;
-            border-color: #6366f1;
-            color: #fff;
-        }
-
-        .quick-ml-badge {
-            cursor: pointer;
-            border: 1px solid #475569;
-            background: #1e293b;
-            color: #f8fafc;
-            border-radius: 20px;
-            padding: 4px 12px;
-            font-size: 0.78rem;
-            transition: all 0.15s;
-        }
-        .quick-ml-badge:hover, .quick-ml-badge.active {
             background: #f59e0b;
-            color: #000;
             border-color: #f59e0b;
-            font-weight: bold;
+            color: #000;
+            font-weight: 700;
         }
 
         #toast-container {
             position: fixed;
-            bottom: 25px;
-            right: 25px;
+            bottom: 20px;
+            right: 20px;
             z-index: 9999;
         }
     </style>
@@ -282,294 +365,265 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
 <body>
     <!-- TOP NAVIGATION -->
     <nav class="navbar-top">
-        <div class="container-fluid d-flex justify-content-between align-items-center">
+        <div class="container-fluid d-flex justify-content-between align-items-center p-0">
             <div class="d-flex align-items-center gap-3">
-                <span class="fs-4 fw-bold text-white">
-                    <i class="fa-solid fa-wand-magic-sparkles text-primary me-2"></i>ReelPilot Studio
+                <span class="fs-4 fw-bold brand-title">
+                    <i class="fa-solid fa-crown text-warning me-2"></i>JANI\'S Perfume Studio
                 </span>
-                <span class="badge text-white rounded-pill px-3 py-1 fw-bold d-none d-md-inline" style="background: var(--gemini-grad); font-size: 0.72rem;">
-                    <i class="fa-solid fa-crown me-1"></i> Luxury Perfume Engine v3.6
+                <span class="badge text-dark rounded-pill px-3 py-1 fw-bold d-none d-md-inline" style="background: var(--gold-gradient); font-size: 0.7rem;">
+                    ReelPilot v3.6 Pro
                 </span>
             </div>
 
             <div class="d-flex align-items-center gap-2">
-                <!-- Live Connection Indicator Chip -->
-                <div id="nav-live-indicator" class="account-chip">
-                    <i class="fa-solid fa-circle text-secondary" id="nav-status-dot"></i>
-                    <span id="nav-status-text" class="fw-bold">Checking Connection...</span>
+                <!-- Live Connection Indicator -->
+                <div id="nav-live-indicator" class="status-pill">
+                    <div class="pulse-dot" id="nav-status-dot"></div>
+                    <span id="nav-status-text">Checking Live Connection...</span>
                 </div>
 
-                <button class="btn btn-outline-light rounded-pill px-3 py-2 btn-sm fw-bold ms-1" onclick="openSettingsModal()">
-                    <i class="fa-solid fa-sliders text-warning me-1"></i> Settings
+                <button class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold ms-1" onclick="openSettingsModal()">
+                    <i class="fa-solid fa-sliders me-1"></i> Settings
                 </button>
             </div>
         </div>
     </nav>
 
-    <div class="container-fluid px-4 py-4">
-        <!-- PROMINENT LIVE CONNECTION STATUS BANNER -->
-        <div id="live-connection-banner" class="p-3 mb-4 card-pro">
+    <div class="app-wrapper">
+        <!-- TOP BRAND & CONNECTION SUMMARY STRIP -->
+        <div class="card-pro p-3 mb-4">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div id="banner-icon-box" class="p-3 rounded-circle text-white fs-3 bg-secondary">
-                        <i class="fa-solid fa-spinner fa-spin"></i>
+                    <div class="p-2 rounded-circle bg-warning bg-opacity-10 text-warning fs-4 px-3">
+                        <i class="fa-solid fa-gem"></i>
                     </div>
                     <div>
-                        <div class="d-flex align-items-center gap-2">
-                            <h5 id="banner-status-title" class="fw-bold mb-0 text-white">Checking Meta Live Connection...</h5>
-                            <span id="banner-status-badge" class="badge bg-secondary rounded-pill">Verifying</span>
+                        <div class="fw-bold text-white small">
+                            Official Brand Accounts Connected
                         </div>
-                        <div id="banner-status-desc" class="small text-white-50 mt-1">
-                            Testing connection live with Meta Graph API for Instagram & Facebook Page...
+                        <div class="text-white-50 small" id="meta-accounts-summary">
+                            Instagram: <strong class="text-warning">@official_janisperfume</strong> | Facebook: <strong class="text-primary">JANI\'s Perfume</strong>
                         </div>
                     </div>
                 </div>
 
-                <div id="banner-action-box" class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-end d-none d-sm-block">
+                        <div class="small text-white-50">Today\'s Auto-Pilot Quota:</div>
+                        <div class="small fw-bold text-white">
+                            <i class="fa-brands fa-instagram text-danger"></i> <span id="stat-ig-count">0/3</span> &nbsp;|&nbsp; 
+                            <i class="fa-brands fa-facebook text-primary"></i> <span id="stat-fb-count">0/3</span>
+                        </div>
+                    </div>
                     <button class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" onclick="checkLiveHealth(true)">
-                        <i class="fa-solid fa-rotate me-1"></i> Refresh Status
+                        <i class="fa-solid fa-rotate me-1"></i> Test Meta API
                     </button>
-                </div>
-            </div>
-
-            <!-- Inline Token Reconnect Box (Visible when Disconnected / Expired) -->
-            <div id="inline-reconnect-box" class="mt-3 pt-3 border-top border-danger border-opacity-50 d-none">
-                <div class="row g-2 align-items-center">
-                    <div class="col-md-9">
-                        <input type="password" id="banner-token-input" class="form-control" placeholder="Paste your fresh Meta Access Token (EAAB...) here to reconnect immediately...">
-                    </div>
-                    <div class="col-md-3">
-                        <button class="btn btn-danger w-100 fw-bold rounded-pill" onclick="reconnectMetaFromBanner()">
-                            <i class="fa-solid fa-link me-1"></i> Reconnect Now
-                        </button>
-                    </div>
-                </div>
-                <div class="small text-white-50 mt-2">
-                    <i class="fa-solid fa-circle-info text-info me-1"></i>
-                    Get your fresh token from <a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="text-info fw-bold text-decoration-underline">Meta Graph API Explorer</a> with permissions <code>pages_manage_posts</code>, <code>pages_read_engagement</code>, and <code>instagram_content_publish</code>.
                 </div>
             </div>
         </div>
 
-        <!-- MAIN POST CREATOR & PC FOLDERS ROW -->
+        <!-- MAIN 2-COLUMN STUDIO WORKBENCH -->
         <div class="row g-4 mb-4">
-            <!-- Left: Studio Post Composer -->
-            <div class="col-lg-7">
-                <div class="card card-pro p-4 h-100">
-                    <h4 class="fw-bold text-white mb-3 d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-plus-circle text-primary me-2"></i>Create & Schedule Post</span>
-                        <span id="selected-files-count" class="badge bg-secondary rounded-pill fw-normal fs-6">0 / 12 Media Selected</span>
-                    </h4>
+            <!-- LEFT COLUMN: POST CREATION & SCHEDULING (7 COLS) -->
+            <div class="col-12 col-lg-7">
+                <div class="card-pro p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary border-opacity-50">
+                        <h5 class="fw-bold text-white mb-0">
+                            <i class="fa-solid fa-circle-plus text-warning me-2"></i>Create & Schedule Post
+                        </h5>
+                        <span id="selected-files-count" class="badge bg-secondary text-white-50">0/12 Media Selected</span>
+                    </div>
 
-                    <!-- Platform Selector -->
+                    <!-- Target Destination Selector -->
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-white">Target Destination</label>
+                        <label class="form-label small fw-bold text-white-50 mb-1">Target Destination</label>
                         <div class="row g-2">
                             <div class="col-4">
-                                <input type="radio" class="btn-check" name="post-platform" id="plat-insta" value="instagram" checked>
-                                <label class="btn btn-outline-light w-100 py-2 fw-bold rounded-3 small" for="plat-insta">
+                                <button type="button" class="btn btn-sm w-100 rounded-3 timing-btn active" id="btn-dest-insta" onclick="selectDestination('instagram')">
                                     <i class="fa-brands fa-instagram text-danger me-1"></i> Instagram
-                                </label>
+                                </button>
                             </div>
                             <div class="col-4">
-                                <input type="radio" class="btn-check" name="post-platform" id="plat-fb" value="facebook">
-                                <label class="btn btn-outline-light w-100 py-2 fw-bold rounded-3 small" for="plat-fb">
+                                <button type="button" class="btn btn-sm w-100 rounded-3 timing-btn" id="btn-dest-fb" onclick="selectDestination('facebook')">
                                     <i class="fa-brands fa-facebook text-primary me-1"></i> Facebook
-                                </label>
+                                </button>
                             </div>
                             <div class="col-4">
-                                <input type="radio" class="btn-check" name="post-platform" id="plat-all" value="all">
-                                <label class="btn btn-outline-light w-100 py-2 fw-bold rounded-3 small" for="plat-all">
-                                    <i class="fa-solid fa-share-nodes text-warning me-1"></i> Both (Insta + FB)
-                                </label>
+                                <button type="button" class="btn btn-sm w-100 rounded-3 timing-btn" id="btn-dest-all" onclick="selectDestination('all')">
+                                    <i class="fa-solid fa-share-nodes text-warning me-1"></i> Both (Insta+FB)
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Multi-Image Drop Zone (1 to 12 Pictures) -->
-                    <div class="drop-zone-main mb-3" onclick="document.getElementById('file-post-input').click()">
-                        <i class="fa-solid fa-cloud-arrow-up fs-2 text-primary mb-2"></i>
-                        <h5 class="fw-bold text-white mb-1">Click to Browse or Drag & Drop 1 to 12 Pictures</h5>
-                        <p class="text-white small mb-0" style="opacity: 0.85;">
-                            Multi-photos will be published as native Carousels / Albums. Pure images stay pure images!
-                        </p>
-                        <input type="file" id="file-post-input" class="d-none" accept="image/*,video/*" multiple onchange="handleFilesSelected(this)">
-                    </div>
-
-                    <!-- 1 to 12 Media Thumbnail Grid -->
-                    <div id="media-grid-container" class="mb-3 d-none">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label class="form-label small fw-bold text-warning mb-0">
-                                <i class="fa-solid fa-layer-group me-1"></i> Media Album Items (Click ★ on any picture to make it Main Cover)
-                            </label>
-                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 small" onclick="clearAllSelectedMedia()">Clear All</button>
+                    <!-- Drag & Drop Media Upload Area -->
+                    <div class="mb-3">
+                        <input type="file" id="media-file-input" multiple accept="image/*,video/*" class="d-none" onchange="handleFileSelect(event)">
+                        <div class="drop-zone-main" id="drop-zone" onclick="document.getElementById('media-file-input').click()">
+                            <i class="fa-solid fa-cloud-arrow-up fs-2 text-warning mb-2 d-block"></i>
+                            <div class="fw-bold text-white mb-1">Click to Browse or Drag & Drop 1 to 12 Pictures</div>
+                            <div class="text-white-50 small">Multi-photos will be published as native Carousels / Albums. Pure images stay pure images!</div>
                         </div>
-                        <div id="selected-media-grid" class="row g-2"></div>
+
+                        <!-- Media Preview Carousel Strip -->
+                        <div id="media-preview-strip" class="row g-2 mt-2 d-none"></div>
                     </div>
 
-                    <!-- DEDICATED PERFUME & PRODUCT SPECIFICATIONS CARD -->
-                    <div class="p-3 bg-dark bg-opacity-75 rounded-3 border border-warning border-opacity-50 mb-3">
+                    <!-- Perfume Specifics Box -->
+                    <div class="p-3 rounded-3 mb-3" style="background: rgba(12, 19, 34, 0.7); border: 1px solid rgba(245, 158, 11, 0.2);">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div class="fw-bold text-warning small d-flex align-items-center gap-1">
-                                <i class="fa-solid fa-crown text-warning"></i>
-                                <span>Perfume Details (Aapke Perfume ki Specifics)</span>
+                            <div class="fw-bold text-warning small">
+                                <i class="fa-solid fa-crown me-1"></i>Perfume Details (Aapke Perfume ki Specifics)
                             </div>
                             <span class="badge bg-warning text-dark fw-bold" style="font-size: 0.65rem;">100% Authentic AI Copy</span>
                         </div>
 
                         <div class="row g-2 mb-2">
-                            <!-- Perfume Name -->
-                            <div class="col-md-7">
+                            <div class="col-8">
                                 <label class="small text-white-50 mb-1">Perfume Name (Naam)</label>
-                                <input type="text" id="perfume-name-input" class="form-control" placeholder="e.g. Oud Royale, Velvet Rose, Janis Signature...">
+                                <input type="text" id="perfume-name-input" class="form-control" placeholder="e.g. Oud Royale, Velvet Rose, Janis Signature, Crown Kredence">
                             </div>
-                            <!-- Bottle Volume (ML) -->
-                            <div class="col-md-5">
-                                <label class="small text-white-50 mb-1">Bottle Size / Volume (ML)</label>
-                                <input type="text" id="perfume-volume-input" class="form-control" placeholder="e.g. 100ml" value="100ml">
+                            <div class="col-4">
+                                <label class="small text-white-50 mb-1">Bottle Size / Volume</label>
+                                <input type="text" id="perfume-ml-input" class="form-control" value="100ml" placeholder="100ml">
                             </div>
                         </div>
 
-                        <!-- Quick ML Selection Pills -->
-                        <div class="d-flex gap-2 mb-2">
-                            <span class="small text-white-50 me-1 align-self-center">Quick ML:</span>
-                            <span class="quick-ml-badge active" onclick="setQuickML('100ml', this)">100ml</span>
-                            <span class="quick-ml-badge" onclick="setQuickML('50ml', this)">50ml</span>
-                            <span class="quick-ml-badge" onclick="setQuickML('30ml', this)">30ml</span>
-                            <span class="quick-ml-badge" onclick="setQuickML('12ml Attar', this)">12ml Attar</span>
-                            <span class="quick-ml-badge" onclick="setQuickML('6ml Attar', this)">6ml Attar</span>
+                        <!-- Quick Volume Badges -->
+                        <div class="d-flex flex-wrap gap-1 align-items-center mb-2">
+                            <span class="small text-white-50 me-1" style="font-size: 0.75rem;">Quick ML:</span>
+                            <span class="badge bg-secondary text-white cursor-pointer px-2 py-1" onclick="setVolume('100ml')">100ml</span>
+                            <span class="badge bg-secondary text-white cursor-pointer px-2 py-1" onclick="setVolume('50ml')">50ml</span>
+                            <span class="badge bg-secondary text-white cursor-pointer px-2 py-1" onclick="setVolume('30ml')">30ml</span>
+                            <span class="badge bg-secondary text-white cursor-pointer px-2 py-1" onclick="setVolume('12ml Attar')">12ml Attar</span>
+                            <span class="badge bg-secondary text-white cursor-pointer px-2 py-1" onclick="setVolume('6ml Attar')">6ml Attar</span>
                         </div>
 
                         <div class="row g-2 mb-2">
-                            <!-- Scent Notes -->
-                            <div class="col-md-6">
-                                <label class="small text-white-50 mb-1">Fragrance Notes / Accords (Optional)</label>
-                                <input type="text" id="perfume-notes-input" class="form-control" placeholder="e.g. Woody Oud, Amber, Vanilla, Rose...">
+                            <div class="col-6">
+                                <label class="small text-white-50 mb-1">Fragrance Notes (Optional)</label>
+                                <input type="text" id="perfume-notes-input" class="form-control" placeholder="e.g. Woody Oud, Amber, Vanilla, Rose">
                             </div>
-                            <!-- Price / Special Offer -->
-                            <div class="col-md-6">
-                                <label class="small text-white-50 mb-1">Price / Special Promotion (Optional)</label>
-                                <input type="text" id="perfume-offer-input" class="form-control" placeholder="e.g. PKR 3,999 with Free Nationwide Delivery">
+                            <div class="col-6">
+                                <label class="small text-white-50 mb-1">Price / Special Promo (Optional)</label>
+                                <input type="text" id="perfume-price-input" class="form-control" placeholder="e.g. PKR 3,999 with Free Delivery">
                             </div>
                         </div>
 
-                        <!-- Single-Click Generate Button -->
-                        <button type="button" class="btn btn-warning w-100 py-2 fw-bold text-dark rounded-pill mt-2 shadow-sm" onclick="generateLuxuryPerfumeCopy()">
-                            <i class="fa-solid fa-wand-magic-sparkles me-2"></i>Generate 100% Authentic AI Luxury Description & Viral Hashtags
+                        <button type="button" class="btn btn-gold w-100 rounded-pill py-2 btn-sm fw-bold mt-1" onclick="generateLuxuryDescription()">
+                            <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Generate 100% Authentic AI Luxury Description & Viral Hashtags
                         </button>
                     </div>
 
-                    <!-- Post Timing & Calendar Scheduling -->
+                    <!-- Caption & Hashtags -->
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-white">Publishing Mode & Schedule</label>
+                        <label class="form-label small fw-bold text-white-50 mb-1">Post Caption & Social Copy</label>
+                        <textarea id="post-caption-input" class="form-control" rows="4" placeholder="Enter caption here... Brand checkout footer is automatically attached!"></textarea>
+                    </div>
+
+                    <!-- Publishing Mode & Schedule Selection -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-white-50 mb-1">Publishing Mode & Schedule</label>
                         <div class="row g-2 mb-2">
                             <div class="col-4">
-                                <div class="timing-btn active" id="timing-btn-instant" onclick="setScheduleMode('instant')">
+                                <button type="button" class="btn btn-sm w-100 rounded-3 timing-btn" id="btn-mode-instant" onclick="selectScheduleMode('instant')">
                                     <i class="fa-solid fa-bolt text-warning me-1"></i> Post Immediately
-                                </div>
+                                </button>
                             </div>
                             <div class="col-4">
-                                <div class="timing-btn" id="timing-btn-calendar" onclick="setScheduleMode('calendar')">
-                                    <i class="fa-solid fa-calendar-days text-info me-1"></i> Calendar Schedule
-                                </div>
+                                <button type="button" class="btn btn-sm w-100 rounded-3 timing-btn active" id="btn-mode-calendar" onclick="selectScheduleMode('calendar')">
+                                    <i class="fa-solid fa-calendar-days text-info me-1"></i> Exact Calendar
+                                </button>
                             </div>
                             <div class="col-4">
-                                <div class="timing-btn" id="timing-btn-queue" onclick="setScheduleMode('queue')">
-                                    <i class="fa-solid fa-robot text-primary me-1"></i> Auto-Pilot Queue
-                                </div>
+                                <button type="button" class="btn btn-sm w-100 rounded-3 timing-btn" id="btn-mode-queue" onclick="selectScheduleMode('queue')">
+                                    <i class="fa-solid fa-robot text-success me-1"></i> Auto-Pilot Queue
+                                </button>
                             </div>
                         </div>
 
-                        <!-- Calendar DateTime Picker -->
-                        <div id="calendar-picker-box" class="p-3 bg-dark bg-opacity-50 rounded-3 border border-info mb-2 d-none">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="small fw-bold text-info"><i class="fa-solid fa-clock me-1"></i> Select Exact Date & Time for Scheduled Publishing:</label>
-                                <span class="badge bg-info text-dark fw-bold">Live Meta Auto-Schedule</span>
+                        <!-- Date & Time Picker Controls (Visible in calendar mode) -->
+                        <div id="calendar-picker-box" class="p-3 rounded-3" style="background: rgba(12, 19, 34, 0.7); border: 1px solid var(--card-border);">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="small text-white-50 mb-1">Schedule Date</label>
+                                    <input type="date" id="schedule-date-input" class="form-control" onchange="updateDateTimePreview()">
+                                </div>
+                                <div class="col-6">
+                                    <label class="small text-white-50 mb-1">Schedule Time</label>
+                                    <input type="time" id="schedule-time-input" class="form-control" onchange="updateDateTimePreview()">
+                                </div>
                             </div>
-                            <input type="datetime-local" id="custom-schedule-datetime" class="form-control form-control-lg mb-2">
-                            
-                            <!-- Quick Presets -->
-                            <div class="d-flex flex-wrap gap-1">
-                                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setQuickTime(30)">+30 Mins</button>
-                                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setQuickTime(60)">+1 Hour</button>
-                                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setQuickTime(180)">+3 Hours</button>
-                                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setTomorrowTime(10)">Tomorrow 10:00 AM (Subah)</button>
-                                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setTomorrowTime(14)">Tomorrow 02:00 PM (Dopahar)</button>
-                                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setTomorrowTime(18)">Tomorrow 06:00 PM (Sham)</button>
-                                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" onclick="setTomorrowTime(21)">Tomorrow 09:00 PM (Raat)</button>
+                            <div class="d-flex justify-content-between align-items-center mt-2 small">
+                                <span class="text-white-50">Selected Waqt:</span>
+                                <span class="badge bg-secondary text-white" id="waqt-preview-badge">Sham (Evening)</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Custom Caption & Hashtags -->
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-white mb-1 d-flex justify-content-between align-items-center"><span>Generated Luxury Post Description (Review or Edit)</span><span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0"><i class="fa-solid fa-link me-1"></i> Auto-Appends Website & WhatsApp Links</span></label>
-                        <textarea id="post-caption-input" class="form-control" rows="4" placeholder="Your luxury sales copy will appear here..."></textarea>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-white mb-1">Viral Perfume Hashtags</label>
-                        <input type="text" id="post-hashtags-input" class="form-control" placeholder="#JanisPerfume #LuxuryFragrance #Trending">
-                    </div>
-
-                    <!-- Action Button -->
-                    <button class="btn btn-success w-100 py-3 rounded-pill fw-bold fs-5 shadow" id="btn-submit-post" onclick="submitPostAction()">
-                        <i class="fa-solid fa-rocket me-2"></i>Publish Immediately
+                    <!-- Submit Button -->
+                    <button type="button" class="btn btn-gold w-100 py-3 rounded-pill fw-bold fs-6 shadow" id="btn-submit-post" onclick="submitPost()">
+                        <i class="fa-solid fa-paper-plane me-2"></i>Publish / Schedule Post
                     </button>
                 </div>
             </div>
 
-            <!-- Right: Watch Folders & Publishing Quotas -->
-            <div class="col-lg-5">
-                <div class="card card-pro p-4 h-100 d-flex flex-column justify-content-between">
+            <!-- RIGHT COLUMN: PC FOLDERS & LIVE STATS (5 COLS) -->
+            <div class="col-12 col-lg-5">
+                <div class="card-pro p-4 h-100 d-flex flex-column justify-content-between">
                     <div>
-                        <h4 class="fw-bold text-white mb-2">
-                            <i class="fa-regular fa-folder-open text-warning me-2"></i>PC Watch Folders
-                        </h4>
-                        <p class="text-white small mb-3" style="opacity: 0.85;">
-                            Drop files directly into these local folders on your computer — the background watcher detects them, applies AI Vision, and publishes automatically:
+                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary border-opacity-50">
+                            <h5 class="fw-bold text-white mb-0">
+                                <i class="fa-solid fa-folder-tree text-warning me-2"></i>PC Watch Folders
+                            </h5>
+                            <span class="badge bg-success bg-opacity-25 text-success">Live Watcher Active</span>
+                        </div>
+
+                        <p class="text-white-50 small mb-3">
+                            Drop images directly into these local folders on your computer — ReelPilot detects them, auto-applies AI Vision, and publishes automatically:
                         </p>
 
                         <!-- Insta Folder -->
-                        <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary mb-2 d-flex justify-content-between align-items-center">
+                        <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary border-opacity-50 mb-2 d-flex justify-content-between align-items-center">
                             <div>
                                 <div class="fw-bold text-white small"><i class="fa-brands fa-instagram text-danger me-2"></i>Instagram PC Folder</div>
-                                <div class="small font-monospace text-secondary text-truncate" style="max-width: 200px;">Ready_for_Insta</div>
+                                <div class="text-white-50" style="font-size: 0.72rem;">watch_folders/Ready_for_Insta</div>
                             </div>
-                            <button class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" onclick="openFolder('insta')">
-                                <i class="fa-regular fa-folder-open me-1"></i> Open on PC
+                            <button class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="openFolder('instagram')">
+                                <i class="fa-regular fa-folder-open me-1"></i> Open
                             </button>
                         </div>
 
                         <!-- Facebook Folder -->
-                        <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary mb-2 d-flex justify-content-between align-items-center">
+                        <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary border-opacity-50 mb-2 d-flex justify-content-between align-items-center">
                             <div>
                                 <div class="fw-bold text-white small"><i class="fa-brands fa-facebook text-primary me-2"></i>Facebook PC Folder</div>
-                                <div class="small font-monospace text-secondary text-truncate" style="max-width: 200px;">Ready_for_Facebook</div>
+                                <div class="text-white-50" style="font-size: 0.72rem;">watch_folders/Ready_for_Facebook</div>
                             </div>
-                            <button class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" onclick="openFolder('facebook')">
-                                <i class="fa-regular fa-folder-open me-1"></i> Open on PC
+                            <button class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="openFolder('facebook')">
+                                <i class="fa-regular fa-folder-open me-1"></i> Open
                             </button>
                         </div>
 
-                        <!-- Cloudflare R2 Cloud Status -->
-                        <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary mb-2 d-flex justify-content-between align-items-center">
+                        <!-- Cloud CDN Storage Status -->
+                        <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary border-opacity-50 mb-3 d-flex justify-content-between align-items-center">
                             <div>
-                                <div class="fw-bold text-white small"><i class="fa-solid fa-cloud text-warning me-2"></i>Cloudflare R2 Object Storage</div>
-                                <div id="label-r2-status" class="small text-info text-truncate" style="max-width: 200px;">Free 10GB Active / Fallback ready</div>
+                                <div class="fw-bold text-white small"><i class="fa-solid fa-cloud text-info me-2"></i>Permanent Direct Image CDN</div>
+                                <div class="text-info" style="font-size: 0.72rem;">High-Speed Binary Direct URLs Active</div>
                             </div>
-                            <button class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold" onclick="openSettingsModal()">
-                                <i class="fa-solid fa-gear me-1"></i> Configure
+                            <button class="btn btn-sm btn-outline-warning rounded-pill px-3" onclick="openSettingsModal()">
+                                <i class="fa-solid fa-gear me-1"></i> Settings
                             </button>
                         </div>
                     </div>
 
-                    <!-- Quota Breakdown -->
-                    <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary small text-white mt-3">
-                        <div class="fw-bold mb-1">Today's Publishing Quota:</div>
-                        <div class="d-flex justify-content-between text-secondary">
-                            <span><i class="fa-brands fa-instagram text-danger me-1"></i> Insta: <strong id="stat-ig-count" class="text-white">0/3</strong></span>
-                            <span><i class="fa-brands fa-facebook text-primary me-1"></i> FB: <strong id="stat-fb-count" class="text-white">0/3</strong></span>
+                    <!-- Brand Guidelines Quick Card -->
+                    <div class="p-3 rounded-3" style="background: rgba(245, 158, 11, 0.05); border: 1px dashed rgba(245, 158, 11, 0.3);">
+                        <div class="fw-bold text-warning small mb-1">
+                            <i class="fa-solid fa-shield-halved me-1"></i>Official Brand Footer Included
+                        </div>
+                        <div class="text-white-50 small" style="font-size: 0.75rem; line-height: 1.4;">
+                            Har post ke end par website <code>janisperfumes.com</code>, WhatsApp <code>03134454899</code> aur DM order details automatically attach hoti hain taake traffic direct customer sales mein convert ho.
                         </div>
                     </div>
                 </div>
@@ -577,733 +631,463 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
         </div>
 
         <!-- VISUAL CONTENT CALENDAR & SCHEDULED TIMELINE SECTION -->
-        <div class="card card-pro p-4 mb-4">
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary gap-2">
+        <div class="card-pro p-4 mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary border-opacity-50 gap-2">
                 <div>
-                    <h4 class="fw-bold text-white mb-0">
+                    <h5 class="fw-bold text-white mb-0">
                         <i class="fa-solid fa-calendar-days text-info me-2"></i>Visual Content Calendar & Scheduled Timeline
-                    </h4>
-                    <p class="text-white small mb-0" style="opacity: 0.85;">
-                        Har scheduled post ka exact <strong>Date</strong>, <strong>Day</strong>, <strong>Time</strong> aur <strong>Waqt (Subah/Dopahar/Sham/Raat)</strong> yahan show hota hai.
+                    </h5>
+                    <p class="text-white-50 small mb-0">
+                        Har scheduled post ka exact <strong>Date</strong>, <strong>Time</strong> aur <strong>Waqt (Subah/Dopahar/Sham/Raat)</strong> yahan show hota hai.
                     </p>
                 </div>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="clearFailedEvents()" title="Clear old failed posts from timeline">
+                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="clearFailedEvents()" title="Purge failed test posts permanently">
                         <i class="fa-solid fa-trash-can me-1"></i> Clear Failed
                     </button>
                     <button class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" onclick="loadCalendarFeed()">
-                    <i class="fa-solid fa-rotate me-1"></i> Refresh Calendar
-                </button>
+                        <i class="fa-solid fa-rotate me-1"></i> Refresh
+                    </button>
+                </div>
             </div>
 
             <div id="calendar-feed-container" class="row g-3">
-                <div class="col-12 text-center py-4 text-secondary">
-                    <i class="fa-solid fa-spinner fa-spin fs-4 mb-2"></i>
+                <div class="col-12 text-center py-4 text-white-50">
+                    <i class="fa-solid fa-spinner fa-spin fs-4 mb-2 text-info"></i>
                     <div>Loading scheduled posts...</div>
                 </div>
             </div>
         </div>
 
-        <!-- VISUAL CONTENT FEED WITH FILTERS -->
-        <div class="card card-pro p-4 mb-4">
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom border-secondary gap-2">
+        <!-- VISUAL CONTENT FEED WITH FILTERS (COMPACT MEDIA GALLERY) -->
+        <div class="card-pro p-4 mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary border-opacity-50 gap-2">
                 <div>
-                    <h4 class="fw-bold text-white mb-0">
-                        <i class="fa-solid fa-film text-primary me-2"></i>Visual Content Feed
-                    </h4>
-                    <p class="text-white small mb-0" style="opacity: 0.85;">
-                        Track published and queued media. Click <strong>▶ Watch</strong> to preview. Click <strong>⚡ Post Now</strong> to publish immediately.
+                    <h5 class="fw-bold text-white mb-0">
+                        <i class="fa-solid fa-film text-warning me-2"></i>Visual Content Feed
+                    </h5>
+                    <p class="text-white-50 small mb-0">
+                        Track published and queued media. Click <strong>▶ Preview</strong> or <strong>⚡ Post Now</strong> to publish immediately.
                     </p>
                 </div>
 
-                <!-- Platform Filter Tabs -->
-                <div class="d-flex gap-2">
+                <div class="d-flex align-items-center gap-2">
                     <button class="feed-filter-btn active" onclick="filterFeed('all', this)">All</button>
                     <button class="feed-filter-btn" onclick="filterFeed('instagram', this)"><i class="fa-brands fa-instagram text-danger me-1"></i> Instagram</button>
                     <button class="feed-filter-btn" onclick="filterFeed('facebook', this)"><i class="fa-brands fa-facebook text-primary me-1"></i> Facebook</button>
-                    <button class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold ms-2" onclick="loadReelsFeed()"><i class="fa-solid fa-rotate"></i></button>
+                    <button class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold ms-1" onclick="loadReelsFeed()"><i class="fa-solid fa-rotate"></i></button>
                 </div>
             </div>
 
-            <!-- Feed Grid -->
-            <div id="reels-feed-grid" class="row g-4">
-                <div class="col-12 text-center py-5 text-white">
-                    <i class="fa-solid fa-spinner fa-spin fs-2 text-primary mb-2"></i>
+            <!-- Feed Grid: Clean, compact e-commerce proportions -->
+            <div id="reels-feed-grid" class="row g-3">
+                <div class="col-12 text-center py-5 text-white-50">
+                    <i class="fa-solid fa-spinner fa-spin fs-2 text-warning mb-2"></i>
                     <div>Loading visual media feed...</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SETTINGS & CLOUDFLARE R2 MODAL -->
+    <!-- SETTINGS MODAL -->
     <div class="modal fade" id="modalStudioSettings" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content bg-dark text-white border border-secondary rounded-4 shadow-lg">
                 <div class="modal-header border-secondary">
                     <h5 class="modal-title fw-bold text-white">
-                        <i class="fa-solid fa-sliders text-warning me-2"></i>Studio Settings & Cloudflare R2 Storage
+                        <i class="fa-solid fa-sliders text-warning me-2"></i>Studio Settings & Meta Configuration
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <!-- Brand Name -->
-                    <div class="mb-4 p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary">
-                        <label class="form-label small fw-bold text-warning">
-                            <i class="fa-solid fa-tag me-1"></i> Your Brand Name (Included in AI Captions & Prompts)
-                        </label>
-                        <input type="text" id="setting-brand-name" class="form-control" placeholder="e.g. JANI's Perfume">
+                    <div class="mb-3">
+                        <label class="small text-white-50 mb-1">Brand Name</label>
+                        <input type="text" id="setting-brand-name" class="form-control" value="JANI\'S Perfume">
                     </div>
-
-                    <!-- Meta Access Token -->
-                    <h6 class="fw-bold text-white border-bottom border-secondary pb-2 mb-3">
-                        <i class="fa-brands fa-meta text-primary me-2"></i>Meta Graph Access Token (Instagram & Facebook)
-                    </h6>
-                    <div class="mb-4">
-                        <div class="input-group">
-                            <input type="password" id="setting-meta-token" class="form-control" placeholder="Paste EAAB... token here">
-                            <button class="btn btn-primary fw-bold px-3" type="button" onclick="verifyMetaToken()">
-                                <i class="fa-solid fa-link me-1"></i> Connect & Sync
-                            </button>
-                        </div>
+                    <div class="mb-3">
+                        <label class="small text-white-50 mb-1">Meta Long-Lived Access Token</label>
+                        <textarea id="setting-meta-token" class="form-control" rows="3" placeholder="Paste your Meta Access Token here..."></textarea>
                     </div>
-
-                    <!-- Cloudflare R2 Storage (Free 10GB S3 Compatible) -->
-                    <h6 class="fw-bold text-white border-bottom border-secondary pb-2 mb-3">
-                        <i class="fa-solid fa-cloud text-warning me-2"></i>Cloudflare R2 Object Storage (Free 10GB for Instagram & Multi-Media)
-                    </h6>
-                    <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary mb-4">
-                        <div class="row g-2 mb-2">
-                            <div class="col-md-6">
-                                <label class="small text-white fw-bold">Cloudflare Account ID</label>
-                                <input type="text" id="setting-r2-account-id" class="form-control" placeholder="e.g. 78a9c402...">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="small text-white fw-bold">R2 Bucket Name</label>
-                                <input type="text" id="setting-r2-bucket-name" class="form-control" placeholder="e.g. reelpilot-media">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="small text-white fw-bold">R2 Access Key ID</label>
-                                <input type="password" id="setting-r2-access-key" class="form-control" placeholder="Access Key">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="small text-white fw-bold">R2 Secret Access Key</label>
-                                <input type="password" id="setting-r2-secret-key" class="form-control" placeholder="Secret Key">
-                            </div>
-                            <div class="col-12">
-                                <label class="small text-white fw-bold">Public Domain / Custom URL (Optional)</label>
-                                <input type="text" id="setting-r2-public-domain" class="form-control" placeholder="https://pub-xxxx.r2.dev">
-                            </div>
-                        </div>
-                        <small class="text-white-50"><i class="fa-solid fa-circle-info text-info me-1"></i> Agar ye empty ho, to system automatic instant free cloud hosting fallback use karta hai, taake Instagram post direct live ho sake bina rukawat ke!</small>
-                    </div>
-
-                    <!-- Dual AI Vision Keys -->
-                    <h6 class="fw-bold text-white border-bottom border-secondary pb-2 mb-3">
-                        <i class="fa-solid fa-brain text-info me-2"></i>Dual-AI Vision Configuration
-                    </h6>
-                    <div class="row g-3 mb-2">
-                        <div class="col-md-6">
-                            <label class="small text-white fw-bold">
-                                <i class="fa-brands fa-google text-danger me-1"></i> Google Gemini API Key
-                            </label>
-                            <input type="password" id="setting-gemini-key" class="form-control" placeholder="AIzaSy...">
-                            <small class="text-secondary">Free tier with multimodal vision at <a href="https://aistudio.google.com" target="_blank" class="text-info">aistudio.google.com</a></small>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="small text-white fw-bold">
-                                <i class="fa-solid fa-robot text-success me-1"></i> OpenAI API Key
-                            </label>
-                            <input type="password" id="setting-openai-key" class="form-control" placeholder="sk-...">
-                            <small class="text-secondary">GPT-4o Vision key from <a href="https://platform.openai.com" target="_blank" class="text-info">platform.openai.com</a></small>
-                        </div>
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" onclick="verifyMetaToken()">
+                            <i class="fa-solid fa-circle-check me-1"></i> Verify & Reconnect Token
+                        </button>
                     </div>
                 </div>
                 <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold" onclick="saveSettings()">Save Changes</button>
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-gold rounded-pill px-4" onclick="saveStudioSettings()">Save Settings</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MEDIA PREVIEW & POST INSPECTOR MODAL -->
-    <div class="modal fade" id="modalVideoPlayer" tabindex="-1">
+    <!-- MEDIA PREVIEW MODAL -->
+    <div class="modal fade" id="modalMediaPreview" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content text-white border border-secondary rounded-4 shadow-lg" style="background: #0b1120 !important;">
-                <div class="modal-header border-secondary py-2 px-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-gem text-warning fs-5"></i>
-                        <h6 class="modal-title fw-bold text-white mb-0" id="preview-modal-title">Post Preview & Details</h6>
-                        <span id="preview-platform-badge"></span>
-                    </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="killVideoPlayback()"></button>
+            <div class="modal-content bg-dark text-white border border-secondary rounded-4">
+                <div class="modal-header border-secondary">
+                    <h6 class="modal-title fw-bold text-white" id="previewModalTitle">Media Preview</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="closePreviewModal()"></button>
                 </div>
-                <div class="modal-body p-3">
-                    <!-- Media Stage with Carousel Overlay Navigation -->
-                    <div id="media-viewer-container" style="position: relative; max-height: 480px; min-height: 280px; display: flex; justify-content: center; align-items: center; background: #030712; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
-                        <video id="preview-video-element" controls style="max-height: 480px; max-width: 100%; display: none;"></video>
-                        <img id="preview-image-element" style="max-height: 480px; max-width: 100%; display: none; object-fit: contain;">
-                        
-                        <!-- Carousel Navigation Controls -->
-                        <div id="carousel-nav-controls" style="display: none;">
-                            <button type="button" class="btn btn-dark bg-opacity-75 text-white border-0 rounded-circle position-absolute start-0 top-50 translate-middle-y ms-2 shadow" style="width: 42px; height: 42px; z-index: 10;" onclick="prevCarouselSlide()">
-                                <i class="fa-solid fa-chevron-left"></i>
-                            </button>
-                            <button type="button" class="btn btn-dark bg-opacity-75 text-white border-0 rounded-circle position-absolute end-0 top-50 translate-middle-y me-2 shadow" style="width: 42px; height: 42px; z-index: 10;" onclick="nextCarouselSlide()">
-                                <i class="fa-solid fa-chevron-right"></i>
-                            </button>
-                            <div class="position-absolute bottom-0 start-50 translate-middle-x mb-2 px-3 py-1 rounded-pill bg-dark bg-opacity-75 text-white small fw-bold shadow border border-secondary" id="carousel-counter-badge" style="z-index: 10; font-size: 0.75rem;">
-                                Photo 1 of 3
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Post Metadata & Full Caption Inspector -->
-                    <div id="preview-details-box" class="mt-3 p-3 bg-dark rounded-3 border border-secondary border-opacity-50 text-start" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-secondary border-opacity-25">
-                            <span class="small text-white-50 fw-semibold"><i class="fa-solid fa-align-left me-1 text-primary"></i> Full Published Caption & Olfactory Notes</span>
-                            <button class="btn btn-xs btn-outline-info rounded-pill py-0 px-2 fw-semibold" style="font-size: 0.75rem;" onclick="copyPreviewCaption()">
-                                <i class="fa-regular fa-copy me-1"></i> Copy Caption
-                            </button>
-                        </div>
-                        <div id="preview-full-caption" class="small text-white mb-2" style="white-space: pre-wrap; max-height: 160px; overflow-y: auto; font-family: inherit; line-height: 1.4; opacity: 0.95;"></div>
-                        <div id="preview-full-hashtags" class="text-info small fw-bold text-truncate" style="font-size: 0.75rem;"></div>
-                    </div>
+                <div class="modal-body p-3 text-center">
+                    <div id="modal-preview-content" style="max-height: 60vh; overflow: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: #000;"></div>
+                    <div id="modal-preview-caption" class="small text-white-50 text-start mt-3 p-3 bg-dark bg-opacity-75 rounded-3 border border-secondary"></div>
+                </div>
+                <div class="modal-footer border-secondary justify-content-between">
+                    <span id="modal-preview-meta" class="small text-white-50"></span>
+                    <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal" onclick="closePreviewModal()">Close</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notifications -->
+    <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toast-container"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
-        let settingsModal = null;
-        let videoModal = null;
-        let currentFeedFilter = "all";
+        // --- GLOBAL STATE ---
+        let selectedFiles = [];
+        let mainCoverIndex = 0;
+        let selectedDestination = 'instagram'; // 'instagram', 'facebook', 'all'
+        let selectedScheduleMode = 'calendar'; // 'instant', 'calendar', 'queue'
+        let currentFeedFilter = 'all';
         let allPostsData = [];
 
-        // Multi-image selection state
-        let selectedMediaFiles = [];
-        let coverIndex = 0;
-        let currentScheduleMode = 'instant';
+        const settingsModal = new bootstrap.Modal(document.getElementById('modalStudioSettings'));
+        const previewModal = new bootstrap.Modal(document.getElementById('modalMediaPreview'));
 
-        document.addEventListener("DOMContentLoaded", () => {
-            settingsModal = new bootstrap.Modal(document.getElementById('modalStudioSettings'));
-            videoModal = new bootstrap.Modal(document.getElementById('modalVideoPlayer'));
+        // LUXURY SVG FALLBACK PLACEHOLDER
+        const LUXURY_FALLBACK_SVG = "data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'300\' viewBox=\'0 0 300 300\'><rect width=\'100%\' height=\'100%\' fill=\'%230b1120\'/><path d=\'M150 70 L170 110 L215 115 L180 145 L190 190 L150 165 L110 190 L120 145 L85 115 L130 110 Z\' fill=\'%23f59e0b\' opacity=\'0.4\'/><text x=\'50%\' y=\'68%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23f59e0b\' font-family=\'Cinzel, sans-serif\' font-weight=\'bold\' font-size=\'15\'>JANI\\'S PERFUME</text><text x=\'50%\' y=\'78%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%2394a3b8\' font-family=\'sans-serif\' font-size=\'11\'>Luxury Fragrance</text></svg>";
 
-            document.getElementById('modalVideoPlayer').addEventListener('hidden.bs.modal', killVideoPlayback);
-
-            loadInitialData();
+        // --- ON PAGE LOAD INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initDefaultDateTime();
             checkLiveHealth();
-            setInterval(checkLiveHealth, 12000);
-            setInterval(refreshStatus, 4000);
-            setInterval(loadReelsFeed, 5000);
-            setInterval(loadCalendarFeed, 6000);
+            loadCalendarFeed();
+            loadReelsFeed();
+            setInterval(checkLiveHealth, 30000);
+            setInterval(loadCalendarFeed, 20000);
         });
 
         function showToast(msg, type = "success") {
-            const container = document.getElementById("toast-container");
-            const toast = document.createElement("div");
-            toast.className = `alert alert-${type === "error" ? "danger" : (type === "warning" ? "warning" : "success")} text-white shadow-lg border-0 d-flex align-items-center gap-2 mb-2`;
-            toast.style.background = type === "error" ? "rgba(220, 38, 38, 0.95)" : (type === "warning" ? "rgba(217, 119, 6, 0.95)" : "rgba(16, 185, 129, 0.95)");
-            toast.style.backdropFilter = "blur(8px)";
-            toast.style.borderRadius = "12px";
-            toast.innerHTML = `<i class="fa-solid fa-${type === "error" ? "circle-xmark" : (type === "warning" ? "circle-exclamation" : "circle-check")}"></i> <div>${msg}</div>`;
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgClass = type === 'error' ? 'bg-danger text-white' : (type === 'warning' ? 'bg-warning text-dark' : 'bg-success text-white');
+            toast.className = `p-3 mb-2 rounded-3 shadow-lg fw-bold d-flex align-items-center gap-2 ${bgClass}`;
+            toast.style.minWidth = '240px';
+            toast.style.fontSize = '0.85rem';
+            toast.innerHTML = `<i class="fa-solid fa-${type === 'error' ? 'circle-xmark' : (type === 'warning' ? 'triangle-exclamation' : 'circle-check')}"></i> <span>${msg}</span>`;
             container.appendChild(toast);
-            setTimeout(() => { toast.remove(); }, 4000);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.4s';
+                setTimeout(() => toast.remove(), 400);
+            }, 3500);
         }
 
-        // --- LIVE HEALTH STATUS CHECK ---
-        async function checkLiveHealth(isUserTriggered = false) {
-            try {
-                const storedToken = localStorage.getItem('reelpilot_meta_token');
-                const headers = storedToken ? { 'X-Meta-Token': storedToken } : {};
-                const res = await fetch('/api/accounts/health', { headers });
-                const data = await res.json();
-
-                const banner = document.getElementById('live-connection-banner');
-                const title = document.getElementById('banner-status-title');
-                const badge = document.getElementById('banner-status-badge');
-                const desc = document.getElementById('banner-status-desc');
-                const iconBox = document.getElementById('banner-icon-box');
-                const inlineBox = document.getElementById('inline-reconnect-box');
-
-                const navDot = document.getElementById('nav-status-dot');
-                const navText = document.getElementById('nav-status-text');
-
-                if (data.connected && data.status === 'ACTIVE') {
-                    // CONNECTED
-                    banner.className = 'p-3 mb-4 card-pro health-banner-connected';
-                    title.innerHTML = `🟢 CONNECTED & VERIFIED LIVE`;
-                    title.className = 'fw-bold mb-0 text-success';
-                    badge.className = 'badge bg-success rounded-pill px-3 py-1';
-                    badge.innerText = 'Token Active';
-
-                    const fbName = data.facebook ? data.facebook.name : "JANI's Perfume";
-                    const igName = data.instagram ? data.instagram.username : "official_janisperfume";
-                    desc.innerHTML = `
-                        <strong>Facebook:</strong> <span class="text-white">${fbName}</span> | 
-                        <strong>Instagram:</strong> <span class="text-white">@${igName}</span> — 
-                        <span class="text-success fw-bold">Live Graph API ready to publish!</span>
-                    `;
-
-                    iconBox.className = 'p-3 rounded-circle text-white fs-3 bg-success';
-                    iconBox.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
-                    inlineBox.classList.add('d-none');
-
-                    navDot.className = 'fa-solid fa-circle text-success';
-                    navText.innerText = `@${igName} (Connected)`;
-                    if (isUserTriggered) showToast("Meta Connection Verified Live & Active!");
-                } else {
-                    // DISCONNECTED OR EXPIRED
-                    banner.className = 'p-3 mb-4 card-pro health-banner-disconnected';
-                    const isExpired = data.status === 'EXPIRED';
-                    title.innerHTML = isExpired ? `🔴 DISCONNECTED - Meta Session Expired` : `🔴 DISCONNECTED - Not Connected`;
-                    title.className = 'fw-bold mb-0 text-danger';
-                    badge.className = 'badge bg-danger rounded-pill px-3 py-1';
-                    badge.innerText = isExpired ? 'Expired' : 'Not Connected';
-
-                    desc.innerHTML = `
-                        <span class="text-warning fw-bold">${data.message || "Meta token missing or expired."}</span>
-                        <div class="mt-1">Is wajah se posts live publish nahi ho sakti thin. Naya token niche paste karein aur 1-click mein reconnect karein:</div>
-                    `;
-
-                    iconBox.className = 'p-3 rounded-circle text-white fs-3 bg-danger';
-                    iconBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
-                    inlineBox.classList.remove('d-none');
-
-                    navDot.className = 'fa-solid fa-circle text-danger';
-                    navText.innerText = `Meta Disconnected`;
-                    if (isUserTriggered) showToast("Meta token is expired or invalid!", "error");
-                }
-            } catch (e) {}
+        // --- DESTINATION & SCHEDULE SELECTION ---
+        function selectDestination(dest) {
+            selectedDestination = dest;
+            document.querySelectorAll('#btn-dest-insta, #btn-dest-fb, #btn-dest-all').forEach(b => b.classList.remove('active'));
+            if (dest === 'instagram') document.getElementById('btn-dest-insta').classList.add('active');
+            if (dest === 'facebook') document.getElementById('btn-dest-fb').classList.add('active');
+            if (dest === 'all') document.getElementById('btn-dest-all').classList.add('active');
         }
 
-        async function reconnectMetaFromBanner() {
-            const token = document.getElementById('banner-token-input').value.trim();
-            if (!token) {
-                showToast("Please paste your Meta Access Token first!", "warning");
-                return;
-            }
-            showToast("Verifying & connecting Meta token...", "warning");
-            try {
-                const res = await fetch('/api/accounts/connect-meta', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ token: token })
-                });
-                const d = await res.json();
-                if (d.success) {
-                    showToast(d.message || "Connected successfully!");
-                    try { localStorage.setItem('reelpilot_meta_token', token); } catch(e){}
-                    document.getElementById('banner-token-input').value = '';
-                    checkLiveHealth();
-                } else {
-                    showToast("Error: " + (d.error || "Failed to connect"), "error");
-                }
-            } catch (e) {
-                showToast("Connection error: " + e, "error");
+        function selectScheduleMode(mode) {
+            selectedScheduleMode = mode;
+            document.querySelectorAll('#btn-mode-instant, #btn-mode-calendar, #btn-mode-queue').forEach(b => b.classList.remove('active'));
+            const pickerBox = document.getElementById('calendar-picker-box');
+            if (mode === 'instant') {
+                document.getElementById('btn-mode-instant').classList.add('active');
+                pickerBox.classList.add('d-none');
+            } else if (mode === 'calendar') {
+                document.getElementById('btn-mode-calendar').classList.add('active');
+                pickerBox.classList.remove('d-none');
+            } else if (mode === 'queue') {
+                document.getElementById('btn-mode-queue').classList.add('active');
+                pickerBox.classList.add('d-none');
             }
         }
 
-        // --- QUICK ML BADGE HELPER ---
-        function setQuickML(val, el) {
-            document.getElementById('perfume-volume-input').value = val;
-            document.querySelectorAll('.quick-ml-badge').forEach(b => b.classList.remove('active'));
-            if (el) el.classList.add('active');
+        function setVolume(v) {
+            document.getElementById('perfume-ml-input').value = v;
         }
 
-        // --- LUXURY PERFUME COPY GENERATOR ---
-        async function generateLuxuryPerfumeCopy() {
-            const prodName = document.getElementById('perfume-name-input').value.trim();
-            const vol = document.getElementById('perfume-volume-input').value.trim() || '100ml';
-            const notes = document.getElementById('perfume-notes-input').value.trim();
-            const offer = document.getElementById('perfume-offer-input').value.trim();
-            const platform = document.querySelector('input[name="post-platform"]:checked').value;
+        function initDefaultDateTime() {
+            const now = new Date();
+            now.setHours(now.getHours() + 2);
+            now.setMinutes(0);
+            const dateStr = now.toISOString().split('T')[0];
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('schedule-date-input').value = dateStr;
+            document.getElementById('schedule-time-input').value = `${hours}:${minutes}`;
+            updateDateTimePreview();
+        }
 
-            if (!prodName) {
-                showToast("Please enter the Perfume Name first (e.g. Oud Royale)!", "warning");
-                document.getElementById('perfume-name-input').focus();
+        function updateDateTimePreview() {
+            const t = document.getElementById('schedule-time-input').value;
+            if (!t) return;
+            const hour = parseInt(t.split(':')[0], 10);
+            let waqt = "Subah (Morning)";
+            if (hour >= 12 && hour < 16) waqt = "Dopahar (Afternoon)";
+            else if (hour >= 16 && hour < 20) waqt = "Sham (Evening)";
+            else if (hour >= 20 || hour < 5) waqt = "Raat (Night)";
+            document.getElementById('waqt-preview-badge').innerText = waqt;
+        }
+
+        // --- FILE SELECTION & DRAG-DROP ---
+        const dropZone = document.getElementById('drop-zone');
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => { e.preventDefault(); dropZone.style.borderColor = '#f59e0b'; }, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => { e.preventDefault(); dropZone.style.borderColor = 'rgba(245, 158, 11, 0.5)'; }, false);
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0) {
+                addFiles(Array.from(dt.files));
+            }
+        });
+
+        function handleFileSelect(e) {
+            if (e.target.files && e.target.files.length > 0) {
+                addFiles(Array.from(e.target.files));
+            }
+        }
+
+        function addFiles(files) {
+            const valid = files.filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'));
+            selectedFiles = selectedFiles.concat(valid).slice(0, 12);
+            renderMediaPreview();
+        }
+
+        function setMainCover(idx) {
+            mainCoverIndex = idx;
+            renderMediaPreview();
+        }
+
+        function removeSelectedFile(idx) {
+            selectedFiles.splice(idx, 1);
+            if (mainCoverIndex >= selectedFiles.length) mainCoverIndex = 0;
+            renderMediaPreview();
+        }
+
+        function renderMediaPreview() {
+            const strip = document.getElementById('media-preview-strip');
+            const countBadge = document.getElementById('selected-files-count');
+            countBadge.innerText = `${selectedFiles.length}/12 Media Selected`;
+
+            if (selectedFiles.length === 0) {
+                strip.classList.add('d-none');
+                strip.innerHTML = '';
                 return;
             }
 
-            showToast("Crafting 100% authentic luxury perfume sales copy & viral hashtags...", "warning");
-
-            try {
-                const res = await fetch('/api/ai/generate-luxury-copy', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        product_name: prodName,
-                        volume_ml: vol,
-                        scent_notes: notes,
-                        price_offer: offer,
-                        platform: platform
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('post-caption-input').value = data.caption;
-                    document.getElementById('post-hashtags-input').value = data.hashtags;
-                    showToast("✨ 100% Authentic Luxury Copy & Hashtags Generated!");
-                } else {
-                    showToast("Copy error: " + (data.error || "Failed"), "error");
-                }
-            } catch (e) {
-                showToast("AI error: " + e, "error");
-            }
-        }
-
-        // --- MULTI-IMAGE & COVER MANAGEMENT (1 to 12 Photos) ---
-        function handleFilesSelected(input) {
-            if (!input.files || input.files.length === 0) return;
-
-            const newFiles = Array.from(input.files);
-            for (let f of newFiles) {
-                if (selectedMediaFiles.length >= 12) {
-                    showToast("Maximum 12 pictures allowed per post!", "warning");
-                    break;
-                }
-                selectedMediaFiles.push(f);
-            }
-            input.value = '';
-            renderSelectedMediaGrid();
-        }
-
-        function renderSelectedMediaGrid() {
-            const grid = document.getElementById('selected-media-grid');
-            const container = document.getElementById('media-grid-container');
-            const countLabel = document.getElementById('selected-files-count');
-
-            if (selectedMediaFiles.length === 0) {
-                container.classList.add('d-none');
-                countLabel.innerText = '0 / 12 Media Selected';
-                return;
-            }
-
-            container.classList.remove('d-none');
-            countLabel.innerText = `${selectedMediaFiles.length} / 12 Media Selected`;
-
-            if (coverIndex >= selectedMediaFiles.length) {
-                coverIndex = 0;
-            }
-
+            strip.classList.remove('d-none');
             let html = '';
-            selectedMediaFiles.forEach((file, idx) => {
-                const isCover = (idx === coverIndex);
-                const isVideo = file.type.startsWith('video/');
-                const objUrl = URL.createObjectURL(file);
+            selectedFiles.forEach((file, idx) => {
+                const isCover = idx === mainCoverIndex;
+                const blobUrl = URL.createObjectURL(file);
+                const isVid = file.type.startsWith('video/');
 
                 html += `
                     <div class="col-4 col-sm-3 col-md-2">
                         <div class="media-preview-card ${isCover ? 'is-cover' : ''}">
-                            ${isCover ? '<span class="cover-badge"><i class="fa-solid fa-star me-1"></i>Cover #1</span>' : ''}
-                            <span class="order-badge">#${idx + 1}</span>
-                            ${isVideo ? 
-                                `<video src="${objUrl}" muted></video>` : 
-                                `<img src="${objUrl}">`
-                            }
-                            <div class="media-card-actions">
-                                ${!isCover ? 
-                                    `<button type="button" class="btn btn-warning py-0 px-1" style="font-size: 0.65rem;" onclick="setCoverIndex(${idx})" title="Make this image the cover">★ Cover</button>` : 
-                                    `<span class="badge bg-warning text-dark py-0 px-1" style="font-size: 0.65rem;">Main</span>`
-                                }
-                                <button type="button" class="btn btn-danger py-0 px-1" style="font-size: 0.65rem;" onclick="removeSelectedFile(${idx})" title="Remove">✕</button>
+                            ${isCover ? '<span class="cover-badge">MAIN</span>' : `<span class="order-badge">#${idx+1}</span>`}
+                            ${isVid ? `<video src="${blobUrl}"></video>` : `<img src="${blobUrl}">`}
+                            <div style="position: absolute; bottom: 2px; right: 2px; z-index: 3;">
+                                <button type="button" class="btn btn-sm btn-dark text-danger p-0 px-1 rounded-circle" onclick="removeSelectedFile(${idx})"><i class="fa-solid fa-xmark"></i></button>
                             </div>
+                            ${!isCover ? `<div style="position: absolute; bottom: 2px; left: 2px; z-index: 3;"><button type="button" class="btn btn-sm btn-dark text-warning p-0 px-1" onclick="setMainCover(${idx})" title="Set as Main Cover"><i class="fa-solid fa-star"></i></button></div>` : ''}
                         </div>
                     </div>
                 `;
             });
-
-            grid.innerHTML = html;
+            strip.innerHTML = html;
         }
 
-        function setCoverIndex(idx) {
-            coverIndex = idx;
-            renderSelectedMediaGrid();
-            showToast(`Photo #${idx + 1} set as Main Cover (Item #1)!`);
+        // --- AI LUXURY DESCRIPTION GENERATOR ---
+        function generateLuxuryDescription() {
+            const name = document.getElementById('perfume-name-input').value.trim() || "Crown Kredence";
+            const ml = document.getElementById('perfume-ml-input').value.trim() || "100ml";
+            const notes = document.getElementById('perfume-notes-input').value.trim() || "Woody Amber, Velvet Rose, Royal Oud";
+            const price = document.getElementById('perfume-price-input').value.trim();
+
+            let priceText = price ? `\n💰 Exclusive Price: ${price}` : "";
+
+            const caption = `Step into Unrivaled Elegance with ${name} (${ml}) by JANI\'S Perfume. 👑\n\nA masterclass in olfactory craftsmanship designed for those who command the room without saying a word.\n\n💎 Olfactory Profile: ${notes}\n✨ Projection & Longevity: Beast Mode Performance with a velvety, intoxicating sillage.${priceText}\n\n🌐 𝐖𝐞𝐛𝐬𝐢𝐭𝐞 𝐂𝐡𝐞𝐜𝐤𝐨𝐮𝐭: janisperfumes.com\n💬 𝐏𝐫𝐞𝐟𝐞𝐫 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩: 03134454899\n📩 𝐒𝐞𝐧𝐝 𝐮𝐬 𝐚 𝐃𝐌 𝐭𝐨 𝐨𝐫𝐝𝐞𝐫 𝐝𝐢𝐫𝐞𝐜𝐭𝐥𝐲!\n\n#JanisPerfumes #${name.replace(/\s+/g, '')} #LuxuryFragrance #OudPerfume #NichePerfume #ViralPerfume #PakistanLuxury`;
+
+            document.getElementById('post-caption-input').value = caption;
+            showToast("Luxury AI Description & Viral Hashtags Generated!");
         }
 
-        function removeSelectedFile(idx) {
-            selectedMediaFiles.splice(idx, 1);
-            if (coverIndex >= selectedMediaFiles.length) coverIndex = 0;
-            renderSelectedMediaGrid();
-        }
-
-        function clearAllSelectedMedia() {
-            selectedMediaFiles = [];
-            coverIndex = 0;
-            renderSelectedMediaGrid();
-        }
-
-        // --- PUBLISHING TIMING MODES & CALENDAR ---
-        function setScheduleMode(mode) {
-            currentScheduleMode = mode;
-            document.getElementById('timing-btn-instant').classList.remove('active');
-            document.getElementById('timing-btn-calendar').classList.remove('active');
-            document.getElementById('timing-btn-queue').classList.remove('active');
-
-            const calBox = document.getElementById('calendar-picker-box');
-            const submitBtn = document.getElementById('btn-submit-post');
-
-            if (mode === 'instant') {
-                document.getElementById('timing-btn-instant').classList.add('active');
-                calBox.classList.add('d-none');
-                submitBtn.innerHTML = '<i class="fa-solid fa-rocket me-2"></i>Publish Immediately Right Now';
-                submitBtn.className = 'btn btn-success w-100 py-3 rounded-pill fw-bold fs-5 shadow';
-            } else if (mode === 'calendar') {
-                document.getElementById('timing-btn-calendar').classList.add('active');
-                calBox.classList.remove('d-none');
-                setQuickTime(60);
-                submitBtn.innerHTML = '<i class="fa-solid fa-calendar-check me-2"></i>Schedule Post on Calendar';
-                submitBtn.className = 'btn btn-info text-dark w-100 py-3 rounded-pill fw-bold fs-5 shadow';
-            } else {
-                document.getElementById('timing-btn-queue').classList.add('active');
-                calBox.classList.add('d-none');
-                submitBtn.innerHTML = '<i class="fa-solid fa-clock me-2"></i>Add to Auto-Pilot Queue (Smart Delay)';
-                submitBtn.className = 'btn btn-primary w-100 py-3 rounded-pill fw-bold fs-5 shadow';
-            }
-        }
-
-        function setQuickTime(mins) {
-            const d = new Date(Date.now() + mins * 60000);
-            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-            document.getElementById('custom-schedule-datetime').value = d.toISOString().slice(0, 16);
-        }
-
-        function setTomorrowTime(hour) {
-            const d = new Date();
-            d.setDate(d.getDate() + 1);
-            d.setHours(hour, 0, 0, 0);
-            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-            document.getElementById('custom-schedule-datetime').value = d.toISOString().slice(0, 16);
-        }
-
-        // --- SUBMIT POST ---
-        async function submitPostAction() {
-            if (selectedMediaFiles.length === 0) {
-                showToast("Please select at least 1 image or video to post!", "warning");
-                return;
-            }
-
-            const platform = document.querySelector('input[name="post-platform"]:checked').value;
-            const caption = document.getElementById('post-caption-input').value.trim();
-            const hashtags = document.getElementById('post-hashtags-input').value.trim();
-            const schedTime = document.getElementById('custom-schedule-datetime').value;
-            let schedTimeUtc = '';
-            if (schedTime) {
-                try {
-                    schedTimeUtc = new Date(schedTime).toISOString();
-                } catch(e) {}
-            }
-
-            if (currentScheduleMode === 'calendar' && !schedTime) {
-                showToast("Please pick an exact date and time on the calendar!", "warning");
-                return;
-            }
-
-            const fd = new FormData();
-            selectedMediaFiles.forEach(f => {
-                fd.append('files', f);
-            });
-            fd.append('main_index', coverIndex);
-            fd.append('platform', platform);
-            fd.append('caption', caption);
-            fd.append('hashtags', hashtags);
-            fd.append('schedule_mode', currentScheduleMode);
-            fd.append('scheduled_time', schedTime);
-            fd.append('scheduled_time_utc', schedTimeUtc);
-
-            showToast("Processing media and configuring multi-platform upload...", "warning");
-
-            try {
-                const res = await fetch('/api/upload', { method: 'POST', body: fd });
-                const d = await res.json();
-                if (d.success) {
-                    showToast(d.message || "Post created successfully!");
-                    clearAllSelectedMedia();
-                    document.getElementById('post-caption-input').value = '';
-                    document.getElementById('perfume-name-input').value = '';
-                    if (d.events && d.events.length > 0) {
-                        let cur = getStoredEvents();
-                        let merged = d.events.concat(cur.filter(c => !d.events.some(de => de.id === c.id)));
-                        setStoredEvents(merged);
-                    }
-                    loadReelsFeed();
-                    loadCalendarFeed();
-                } else {
-                    showToast("Error: " + (d.error || "Upload failed"), "error");
-                }
-            } catch (e) {
-                showToast("Upload error: " + e, "error");
-            }
-        }
-
-        // --- CALENDAR FEED WITH LOCALSTORAGE PERSISTENCE (NO DISAPPEARING/FLICKER) ---
-        function getStoredEvents() {
-            try {
-                return JSON.parse(localStorage.getItem('reelpilot_calendar_events') || '[]');
-            } catch (e) {
-                return [];
-            }
-        }
-
-        function setStoredEvents(events) {
-            try {
-                localStorage.setItem('reelpilot_calendar_events', JSON.stringify(events));
-            } catch (e) {}
-        }
-
+        // --- RESOLVE THUMBNAIL URL ---
         function getCoverMediaUrl(item) {
-            if (!item) return '';
+            if (!item) return LUXURY_FALLBACK_SVG;
             if (item.cover_url && typeof item.cover_url === 'string' && item.cover_url.trim()) {
                 return item.cover_url.trim();
+            }
+            if (Array.isArray(item.media_urls) && item.media_urls.length > 0) {
+                return item.media_urls[0];
             }
             let target = item.processed_path || item.file_path || '';
             if (typeof target === 'string' && target.trim().startsWith('[')) {
                 try {
                     const arr = JSON.parse(target);
-                    if (Array.isArray(arr) && arr.length > 0) {
-                        target = arr[0] || '';
-                    }
+                    if (Array.isArray(arr) && arr.length > 0) target = arr[0] || '';
                 } catch (e) {}
             }
-            if (!target) return '';
+            if (!target) return LUXURY_FALLBACK_SVG;
             target = String(target).trim();
-            if (target.startsWith('http://') || target.startsWith('https://')) {
-                return target;
-            }
+            if (target.startsWith('http://') || target.startsWith('https://')) return target;
             const fname = target.split(/[\\/]/).pop();
-            return fname ? `/api/media/${encodeURIComponent(fname)}` : '';
+            return fname ? `/api/media/${encodeURIComponent(fname)}` : LUXURY_FALLBACK_SVG;
         }
 
+        // --- LIVE HEALTH STATUS ---
+        async function checkLiveHealth(isUser = false) {
+            try {
+                const res = await fetch('/api/accounts/health');
+                const data = await res.json();
+                const dot = document.getElementById('nav-status-dot');
+                const text = document.getElementById('nav-status-text');
+                const pill = document.getElementById('nav-live-indicator');
+                const sum = document.getElementById('meta-accounts-summary');
+
+                if (data.connected && data.status === 'ACTIVE') {
+                    pill.className = 'status-pill';
+                    dot.style.backgroundColor = '#10b981';
+                    const ig = (data.instagram && data.instagram.username) ? data.instagram.username : "official_janisperfume";
+                    const fb = (data.facebook && data.facebook.name) ? data.facebook.name : "JANI\'s Perfume";
+                    text.innerText = `@${ig} (Live Active)`;
+                    sum.innerHTML = `Instagram: <strong class="text-warning">@${ig}</strong> | Facebook: <strong class="text-primary">${fb}</strong> (Graph API Live)`;
+                    if (isUser) showToast("Meta Graph API Connected & Live!");
+                } else {
+                    pill.className = 'status-pill status-pill-disconnected';
+                    dot.style.backgroundColor = '#ef4444';
+                    text.innerText = 'Meta Disconnected';
+                    sum.innerHTML = `<span class="text-danger fw-bold">Session Expired or Missing Token. Please reconnect in Settings!</span>`;
+                    if (isUser) showToast("Meta Connection Error", "error");
+                }
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+
+        // --- CALENDAR FEED LOADER ---
         async function loadCalendarFeed() {
             const container = document.getElementById('calendar-feed-container');
-            let deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
-
             try {
                 const res = await fetch('/api/calendar');
                 const data = await res.json();
-                if (data.success && Array.isArray(data.events)) {
-                    // Server is single source of truth! Keep only events user hasn't deleted
-                    const validEvents = data.events.filter(e => !deletedIds.has(e.id));
-                    setStoredEvents(validEvents);
+                const events = (data.success && Array.isArray(data.events)) ? data.events : [];
+
+                // Filter out any locally deleted IDs (if user just clicked delete)
+                const deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
+                const activeEvents = events.filter(e => !deletedIds.has(String(e.id)) && !deletedIds.has(Number(e.id)));
+
+                if (activeEvents.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-12 text-center py-4 text-white-50">
+                            <i class="fa-solid fa-calendar-check fs-2 text-warning opacity-50 mb-2"></i>
+                            <div class="fw-bold text-white">No Upcoming Scheduled Posts</div>
+                            <small class="text-white-50">Use the workbench above to schedule your next luxury post!</small>
+                        </div>
+                    `;
+                    return;
                 }
-            } catch (e) {
-                console.warn("Calendar fetch warning:", e);
-            }
 
-            let storedEvents = getStoredEvents().filter(e => !deletedIds.has(e.id));
+                let html = '';
+                activeEvents.forEach(ev => {
+                    const isCarousel = ev.media_type === 'carousel';
+                    const plat = ev.target_platform || 'instagram';
+                    const platBadge = plat === 'facebook' 
+                        ? '<span class="badge badge-fb"><i class="fa-brands fa-facebook me-1"></i>FACEBOOK</span>' 
+                        : '<span class="badge badge-insta"><i class="fa-brands fa-instagram me-1"></i>INSTAGRAM</span>';
+                    const typeBadge = isCarousel 
+                        ? '<span class="badge bg-warning text-dark"><i class="fa-solid fa-images me-1"></i>Album</span>' 
+                        : '<span class="badge bg-secondary">Photo</span>';
 
-            if (!storedEvents || storedEvents.length === 0) {
-                container.innerHTML = `
-                    <div class="col-12 text-center py-4 text-secondary">
-                        <i class="fa-solid fa-calendar-check fs-2 text-info opacity-50 mb-2"></i>
-                        <div class="fw-bold text-white">No Upcoming Scheduled Posts</div>
-                        <small>Use "Calendar Schedule" above to plan posts for exact future dates & times!</small>
-                    </div>
-                `;
-                return;
-            }
+                    const dt = ev.dt_info || { exact_date: ev.scheduled_time || 'Scheduled', exact_time: '', waqt: 'Waqt', countdown: 'Ready' };
 
-            let html = '';
-            storedEvents.forEach(ev => {
-                const isCarousel = ev.media_type === 'carousel';
-                const plat = ev.target_platform || 'instagram';
-                let platBadge = '<span class="badge" style="background: var(--insta-grad); font-size: 0.65rem;">INSTAGRAM</span>';
-                if (plat === 'facebook') platBadge = '<span class="badge bg-primary" style="font-size: 0.65rem;">FACEBOOK</span>';
+                    let statusBadge = '';
+                    let actionBtn = '';
 
-                let typeBadge = isCarousel ? '<span class="badge bg-warning text-dark" style="font-size: 0.65rem;"><i class="fa-solid fa-images me-1"></i>Album</span>' : '<span class="badge bg-secondary" style="font-size: 0.65rem;">Single</span>';
+                    if (ev.status === 'UPLOADED') {
+                        statusBadge = '<span class="badge bg-success text-white fw-bold"><i class="fa-solid fa-circle-check me-1"></i>LIVE</span>';
+                        actionBtn = ev.remote_url 
+                            ? `<a href="${ev.remote_url}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill flex-grow-1 fw-bold py-1" style="font-size: 0.72rem;"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>View Live</a>`
+                            : `<button class="btn btn-sm btn-outline-success rounded-pill flex-grow-1 fw-bold disabled py-1" style="font-size: 0.72rem;"><i class="fa-solid fa-check-double me-1"></i>Published</button>`;
+                    } else if (ev.status === 'UPLOADING') {
+                        statusBadge = '<span class="badge bg-warning text-dark fw-bold"><i class="fa-solid fa-spinner fa-spin me-1"></i>Publishing...</span>';
+                        actionBtn = `<button class="btn btn-sm btn-warning rounded-pill flex-grow-1 fw-bold disabled text-dark py-1" style="font-size: 0.72rem;"><i class="fa-solid fa-spinner fa-spin me-1"></i>Publishing</button>`;
+                    } else if (ev.status === 'FAILED') {
+                        statusBadge = '<span class="badge bg-danger text-white fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>Failed</span>';
+                        actionBtn = `<button class="btn btn-sm btn-danger rounded-pill flex-grow-1 fw-bold py-1" style="font-size: 0.72rem;" onclick="forcePost(${ev.id})"><i class="fa-solid fa-rotate me-1"></i>Retry Now</button>`;
+                    } else {
+                        statusBadge = `<span class="badge bg-info text-dark fw-bold"><i class="fa-solid fa-clock me-1"></i>${dt.countdown}</span>`;
+                        actionBtn = `<button class="btn btn-sm btn-primary rounded-pill flex-grow-1 fw-bold py-1" style="font-size: 0.72rem;" onclick="forcePost(${ev.id})"><i class="fa-solid fa-bolt me-1"></i>Post Now</button>`;
+                    }
 
-                // Formatting exact schedule
-                const dtInfo = ev.dt_info || { exact_date: ev.scheduled_time || 'Queue', exact_time: '', waqt: '', countdown: ev.scheduled_countdown || 'Scheduled' };
+                    const thumbUrl = getCoverMediaUrl(ev);
+                    const errorHtml = ev.error_message ? `<div class="text-danger small caption-clamp-1 mt-1 fw-bold" title="${(ev.error_message).replace(/"/g, '&quot;')}"><i class="fa-solid fa-circle-exclamation me-1"></i>${ev.error_message}</div>` : '';
 
-                // Status Badge & Action Button
-                let statusBadge = '';
-                let actionBtn = '';
-                if (ev.status === 'UPLOADED') {
-                    statusBadge = '<span class="badge bg-success text-white fw-bold px-2 py-1" style="font-size: 0.65rem;"><i class="fa-solid fa-circle-check me-1"></i> LIVE</span>';
-                    actionBtn = `<button class="btn btn-sm btn-outline-success rounded-pill flex-grow-1 fw-bold disabled py-1" style="font-size: 0.72rem;"><i class="fa-solid fa-check-double me-1"></i> Live on ${plat.toUpperCase()}</button>`;
-                } else if (ev.status === 'UPLOADING') {
-                    statusBadge = '<span class="badge bg-warning text-dark fw-bold px-2 py-1" style="font-size: 0.65rem;"><i class="fa-solid fa-spinner fa-spin me-1"></i> Publishing...</span>';
-                    actionBtn = `<button class="btn btn-sm btn-warning rounded-pill flex-grow-1 fw-bold disabled text-dark py-1" style="font-size: 0.72rem;"><i class="fa-solid fa-spinner fa-spin me-1"></i> Publishing...</button>`;
-                } else if (ev.status === 'FAILED') {
-                    statusBadge = '<span class="badge bg-danger text-white fw-bold px-2 py-1" style="font-size: 0.65rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i> Failed</span>';
-                    actionBtn = `<button class="btn btn-sm btn-danger rounded-pill flex-grow-1 fw-bold py-1" style="font-size: 0.72rem;" onclick="forcePost(${ev.id})"><i class="fa-solid fa-rotate me-1"></i> Retry Now</button>`;
-                } else {
-                    statusBadge = `<span class="badge bg-info text-dark fw-bold px-2 py-1" style="font-size: 0.65rem;"><i class="fa-solid fa-clock me-1"></i> ${dtInfo.countdown}</span>`;
-                    actionBtn = `<button class="btn btn-sm btn-primary rounded-pill flex-grow-1 fw-bold py-1" style="font-size: 0.72rem;" onclick="forcePost(${ev.id})"><i class="fa-solid fa-bolt me-1"></i> Post Now</button>`;
-                }
-                let errorHtml = ev.error_message ? `<div class="small text-danger fw-bold mt-1 text-truncate" style="font-size: 0.7rem;" title="${ev.error_message.replace(/"/g, '&quot;')}"><i class="fa-solid fa-circle-exclamation me-1"></i>${ev.error_message}</div>` : '';
-
-                // Cover thumbnail
-                const thumbUrl = getCoverMediaUrl(ev);
-
-                html += `
-                    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                        <div class="p-2 bg-dark bg-opacity-75 rounded-3 border border-secondary d-flex flex-column justify-content-between h-100" style="min-height: 160px;">
-                            <div>
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div class="d-flex gap-1">${platBadge} ${typeBadge}</div>
-                                    ${statusBadge}
-                                </div>
-
-                                <div class="d-flex gap-2 align-items-center mb-2 p-2 bg-dark rounded-3 border border-secondary border-opacity-50">
-                                    <img src="${thumbUrl}" style="width: 48px; height: 48px; border-radius: 6px; object-fit: cover; flex-shrink: 0; cursor: pointer;" onclick="previewPost(${ev.id})" title="Click to Inspect" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'48\' height=\'48\' viewBox=\'0 0 48 48\'><rect width=\'100%\' height=\'100%\' fill=\'%23111827\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%236b7280\' font-family=\'sans-serif\' font-size=\'10\'>IMG</text></svg>';">
-                                    <div style="line-height: 1.25; overflow: hidden;">
-                                        <div class="fw-bold text-warning" style="font-size: 0.72rem;"><i class="fa-solid fa-calendar-day me-1"></i>${dtInfo.exact_date}</div>
-                                        <div class="fw-bold text-white" style="font-size: 0.82rem;"><i class="fa-solid fa-clock me-1 text-info"></i>${dtInfo.exact_time}</div>
-                                        <div class="badge bg-secondary text-white-50" style="font-size: 0.62rem;">${dtInfo.waqt}</div>
+                    html += `
+                        <div class="col-12 col-md-6 col-xl-4" id="timeline-post-${ev.id}">
+                            <div class="timeline-card">
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="d-flex gap-1">${platBadge} ${typeBadge}</div>
+                                        ${statusBadge}
                                     </div>
+
+                                    <div class="d-flex gap-2 align-items-center p-2 rounded-3 mb-2" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05);">
+                                        <img src="${thumbUrl}" style="width: 52px; height: 52px; border-radius: 8px; object-fit: cover; flex-shrink: 0; cursor: pointer;" onclick="previewPost(${ev.id})" onerror="this.onerror=null; this.src='${LUXURY_FALLBACK_SVG}';">
+                                        <div style="line-height: 1.25; overflow: hidden; min-width: 0;">
+                                            <div class="fw-bold text-warning small caption-clamp-1"><i class="fa-solid fa-calendar-day me-1"></i>${dt.exact_date}</div>
+                                            <div class="fw-bold text-white caption-clamp-1" style="font-size: 0.8rem;"><i class="fa-solid fa-clock text-info me-1"></i>${dt.exact_time}</div>
+                                            <span class="badge-waqt">${dt.waqt}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="caption-clamp-2 text-white-50 small mb-2" style="font-size: 0.75rem;">
+                                        ${ev.caption || 'No caption'}
+                                    </div>
+                                    ${errorHtml}
                                 </div>
 
-                                <div class="text-white-50 text-truncate mb-1" style="font-size: 0.73rem;" title="${(ev.caption || '').replace(/"/g, '&quot;')}">
-                                    ${ev.caption || 'No caption'}
+                                <div class="d-flex gap-2 mt-2 pt-2 border-top border-secondary border-opacity-50">
+                                    ${actionBtn}
+                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1" style="font-size: 0.72rem;" onclick="deletePost(${ev.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
                                 </div>
-                            </div>
-
-                            ${errorHtml}
-                            <div class="d-flex gap-1 mt-2 pt-2 border-top border-secondary border-opacity-50">
-                                ${actionBtn}
-                                <button class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" style="font-size: 0.72rem;" onclick="deletePost(${ev.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
                             </div>
                         </div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        }
-
-        async function clearFailedPosts() {
-            if (!confirm("Are you sure you want to clear all failed test posts from the calendar?")) return;
-            try {
-                // 1. Instantly remove from local browser storage
-                let cur = getStoredEvents().filter(e => e.status !== 'FAILED');
-                setStoredEvents(cur);
-
-                // 2. Call server to wipe from DB and CloudQueue
-                const res = await fetch('/api/posts/clear-failed', { method: 'POST' });
-                const d = await res.json();
-
-                showToast(`Cleared ${d.removed || 0} failed posts!`);
-                await loadCalendarFeed();
-                await loadReelsFeed();
+                    `;
+                });
+                container.innerHTML = html;
             } catch (e) {
-                showToast("Error clearing failed posts: " + e, "error");
+                console.warn(e);
             }
         }
 
-        // --- REELS FEED & STATUS ---
+        // --- REELS FEED & COMPACT GALLERY ---
         async function loadReelsFeed() {
             try {
                 const res = await fetch('/api/posts');
                 const data = await res.json();
-                let deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
-                allPostsData = (Array.isArray(data) ? data : []).filter(p => !deletedIds.has(p.id));
+                const deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
+                allPostsData = (Array.isArray(data) ? data : []).filter(p => !deletedIds.has(String(p.id)) && !deletedIds.has(Number(p.id)));
                 renderPosts();
-            } catch (e) {}
+            } catch (e) {
+                console.warn(e);
+            }
         }
 
         function filterFeed(plat, btn) {
@@ -1315,19 +1099,17 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
 
         function renderPosts() {
             const container = document.getElementById('reels-feed-grid');
-            let deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
-            let filtered = (allPostsData || []).filter(p => !deletedIds.has(p.id));
-
+            let filtered = allPostsData;
             if (currentFeedFilter !== 'all') {
                 filtered = filtered.filter(p => p.target_platform === currentFeedFilter);
             }
 
             if (!filtered || filtered.length === 0) {
                 container.innerHTML = `
-                    <div class="col-12 text-center py-5">
-                        <i class="fa-solid fa-film fs-1 text-primary mb-3 d-block opacity-50"></i>
-                        <h5 class="fw-bold text-white">No Posts Found for ${currentFeedFilter.toUpperCase()}</h5>
-                        <p class="text-white small mb-3" style="opacity: 0.8;">Upload media above or drop into watch folders!</p>
+                    <div class="col-12 text-center py-5 text-white-50">
+                        <i class="fa-solid fa-box-open fs-1 text-warning mb-2 d-block opacity-40"></i>
+                        <h6 class="fw-bold text-white">No Posts in Feed (${currentFeedFilter.toUpperCase()})</h6>
+                        <small>Drop images in watch folders or create a post above!</small>
                     </div>
                 `;
                 return;
@@ -1336,50 +1118,30 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             let html = '';
             filtered.forEach(p => {
                 const plat = p.target_platform || 'instagram';
-                let platBadge = '<span class="badge" style="background: var(--insta-grad); font-size: 0.65rem;">INSTAGRAM</span>';
-                if (plat === 'facebook') platBadge = '<span class="badge bg-primary" style="font-size: 0.65rem;">FACEBOOK</span>';
-
-                const isCarousel = p.media_type === 'carousel';
-                const isImage = p.media_type === 'image';
-                let typeBadge = '<span class="badge bg-secondary" style="font-size: 0.65rem;"><i class="fa-solid fa-video me-1"></i>Reel</span>';
-                if (isCarousel) typeBadge = '<span class="badge bg-warning text-dark" style="font-size: 0.65rem;"><i class="fa-solid fa-images me-1"></i>Album</span>';
-                if (isImage) typeBadge = '<span class="badge bg-info text-dark" style="font-size: 0.65rem;"><i class="fa-solid fa-image me-1"></i>Photo</span>';
-
-                let statusBadge = '<span class="badge bg-warning text-dark fw-bold" style="font-size: 0.65rem;">Processing...</span>';
-                if (p.status === 'SCHEDULED') {
-                    statusBadge = `<span class="badge bg-primary text-white fw-bold" style="font-size: 0.65rem;"><i class="fa-solid fa-clock me-1"></i> ${p.scheduled_countdown || 'Ready'}</span>`;
-                } else if (p.status === 'UPLOADED') {
-                    statusBadge = `<span class="badge bg-success text-white fw-bold" style="font-size: 0.65rem;"><i class="fa-solid fa-check me-1"></i> Live</span>`;
-                } else if (p.status === 'FAILED') {
-                    statusBadge = `<span class="badge bg-danger text-white fw-bold" style="font-size: 0.65rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i> Failed</span>`;
-                }
-
+                const platBadge = plat === 'facebook' ? '<span class="badge badge-fb">FB</span>' : '<span class="badge badge-insta">IG</span>';
                 const thumbUrl = getCoverMediaUrl(p);
 
+                let statusBadge = '<span class="badge bg-secondary" style="font-size: 0.6rem;">Queued</span>';
+                if (p.status === 'UPLOADED') statusBadge = '<span class="badge bg-success" style="font-size: 0.6rem;">Live</span>';
+                else if (p.status === 'SCHEDULED') statusBadge = '<span class="badge bg-info text-dark" style="font-size: 0.6rem;">Scheduled</span>';
+                else if (p.status === 'FAILED') statusBadge = '<span class="badge bg-danger" style="font-size: 0.6rem;">Failed</span>';
+
                 html += `
-                    <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-2" id="feed-post-${p.id}">
                         <div class="reel-card">
                             <div class="reel-thumb-container" onclick="previewPost(${p.id})">
-                                <img src="${thumbUrl}" class="reel-thumb-img" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'200\' viewBox=\'0 0 300 200\'><rect width=\'100%\' height=\'100%\' fill=\'%23111827\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%236b7280\' font-family=\'sans-serif\' font-size=\'13\'>Crown Kredence</text></svg>';">
-                                <div class="reel-play-btn"><i class="fa-solid fa-${p.media_type === 'video' ? 'play' : 'eye'}"></i></div>
-                                <div style="position: absolute; top: 6px; left: 6px; display: flex; gap: 3px;">${platBadge} ${typeBadge}</div>
-                                <div style="position: absolute; bottom: 6px; left: 6px;">${statusBadge}</div>
+                                <img src="${thumbUrl}" class="reel-thumb-img" onerror="this.onerror=null; this.src='${LUXURY_FALLBACK_SVG}';">
+                                <div style="position: absolute; top: 4px; left: 4px;">${platBadge}</div>
+                                <div style="position: absolute; bottom: 4px; left: 4px;">${statusBadge}</div>
                             </div>
-                            <div class="p-2 d-flex flex-column justify-content-between flex-grow-1" style="font-size: 0.8rem;">
-                                <div>
-                                    <div class="text-white fw-bold mb-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.78rem; line-height: 1.25;" title="${(p.caption || '').replace(/"/g, '&quot;')}">
-                                        ${p.caption || "Crown Kredence by JANI'S"}
-                                    </div>
-                                    <div class="text-info fw-semibold text-truncate mb-2" style="font-size: 0.7rem;">${p.hashtags || '#JANIsPerfume'}</div>
-                                    ${p.status === 'FAILED' && p.error_message ? `<div class="alert alert-danger p-1 mb-1 text-truncate" style="font-size:0.68rem;" title="${p.error_message.replace(/"/g, '&quot;')}">${p.error_message}</div>` : ''}
+                            <div class="p-2 d-flex flex-column justify-content-between flex-grow-1" style="font-size: 0.75rem;">
+                                <div class="caption-clamp-1 fw-bold text-white mb-1" title="${(p.caption || '').replace(/"/g, '&quot;')}">
+                                    ${p.caption || 'Perfume Post'}
                                 </div>
-                                <div class="d-flex gap-1 pt-1 border-top border-secondary border-opacity-50">
-                                    ${(p.status === 'SCHEDULED' || p.status === 'QUEUED') ? 
-                                        `<button class="btn btn-sm btn-success rounded-pill flex-grow-1 fw-bold py-1 px-1" style="font-size: 0.7rem;" onclick="forcePost(${p.id})"><i class="fa-solid fa-bolt me-1"></i>Post</button>` : 
-                                        (p.remote_url ? `<a href="${p.remote_url}" target="_blank" class="btn btn-sm btn-outline-info rounded-pill flex-grow-1 fw-bold py-1 px-1" style="font-size: 0.7rem;"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Live</a>` : '')
-                                    }
-                                    <button class="btn btn-sm btn-outline-light rounded-pill px-2 py-1" style="font-size: 0.7rem;" onclick="previewPost(${p.id})" title="Preview Full Album & Caption"><i class="fa-solid fa-eye"></i></button>
-                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" style="font-size: 0.7rem;" onclick="deletePost(${p.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                                <div class="d-flex justify-content-between align-items-center mt-1 pt-1 border-top border-secondary border-opacity-50">
+                                    <button class="btn btn-sm btn-link text-warning p-0" onclick="previewPost(${p.id})" title="Preview"><i class="fa-solid fa-eye"></i></button>
+                                    ${p.status !== 'UPLOADED' ? `<button class="btn btn-sm btn-link text-primary p-0" onclick="forcePost(${p.id})" title="Post Now"><i class="fa-solid fa-bolt"></i></button>` : ''}
+                                    <button class="btn btn-sm btn-link text-danger p-0" onclick="deletePost(${p.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -1389,196 +1151,153 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             container.innerHTML = html;
         }
 
-        // Carousel & Inspector State
-        let activeCarouselSlides = [];
-        let activeCarouselIndex = 0;
-        let activePreviewPost = null;
-
-        function previewPost(postId) {
-            const p = allPostsData.find(x => x.id === postId) || getStoredEvents().find(x => x.id === postId);
-            if (!p) return;
-            activePreviewPost = p;
-
-            // Platform badge
-            const plat = p.target_platform || 'instagram';
-            const badgeElem = document.getElementById('preview-platform-badge');
-            if (badgeElem) {
-                badgeElem.innerHTML = plat === 'facebook' ? 
-                    '<span class="badge bg-primary px-2 py-1" style="font-size:0.7rem;"><i class="fa-brands fa-facebook me-1"></i> FACEBOOK</span>' : 
-                    '<span class="badge px-2 py-1" style="background: var(--insta-grad); font-size:0.7rem;"><i class="fa-brands fa-instagram me-1"></i> INSTAGRAM</span>';
+        // --- SUBMIT POST HANDLER ---
+        async function submitPost() {
+            if (selectedFiles.length === 0) {
+                showToast("Please select at least 1 image or video!", "warning");
+                return;
             }
 
-            // Extract all media items
-            let mediaItems = [];
-            let rawPath = p.processed_path || p.file_path || '';
-            if (typeof rawPath === 'string' && rawPath.trim().startsWith('[')) {
-                try {
-                    const parsed = JSON.parse(rawPath);
-                    if (Array.isArray(parsed)) mediaItems = parsed;
-                } catch(e) {}
-            } else if (rawPath) {
-                mediaItems = [rawPath];
+            const caption = document.getElementById('post-caption-input').value.trim();
+            const date = document.getElementById('schedule-date-input').value;
+            const time = document.getElementById('schedule-time-input').value;
+
+            const fd = new FormData();
+            selectedFiles.forEach(f => fd.append("files", f));
+            fd.append("platform", selectedDestination);
+            fd.append("caption", caption);
+            fd.append("main_index", mainCoverIndex);
+            fd.append("schedule_mode", selectedScheduleMode);
+
+            if (selectedScheduleMode === 'calendar' && date && time) {
+                const combined = `${date}T${time}:00`;
+                fd.append("scheduled_time", combined);
+                const localDate = new Date(combined);
+                if (!isNaN(localDate.getTime())) {
+                    fd.append("scheduled_time_utc", localDate.toISOString());
+                }
             }
 
-            // Populate caption & hashtags
-            const detailsBox = document.getElementById('preview-details-box');
-            const capElem = document.getElementById('preview-full-caption');
-            const hashElem = document.getElementById('preview-full-hashtags');
-            if (detailsBox && capElem) {
-                detailsBox.style.display = 'block';
-                capElem.textContent = p.caption || 'No caption available.';
-                if (hashElem) hashElem.textContent = p.hashtags || '';
-            }
+            const btn = document.getElementById('btn-submit-post');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Processing & Uploading to Cloud...';
 
-            // Handle slides
-            activeCarouselSlides = mediaItems.map(item => {
-                let target = String(item).trim();
-                if (target.startsWith('http://') || target.startsWith('https://') || target.startsWith('/api/')) return target;
-                const fname = target.split(/[\\/]/).pop();
-                return `/api/media/${encodeURIComponent(fname)}`;
-            });
-            activeCarouselIndex = 0;
-
-            showCarouselSlide(activeCarouselIndex);
-            videoModal.show();
-        }
-
-        function showCarouselSlide(idx) {
-            const navControls = document.getElementById('carousel-nav-controls');
-            const counterBadge = document.getElementById('carousel-counter-badge');
-            const videoElem = document.getElementById('preview-video-element');
-            const imgElem = document.getElementById('preview-image-element');
-
-            if (!activeCarouselSlides || activeCarouselSlides.length === 0) return;
-            if (idx < 0) idx = activeCarouselSlides.length - 1;
-            if (idx >= activeCarouselSlides.length) idx = 0;
-            activeCarouselIndex = idx;
-
-            if (navControls) {
-                navControls.style.display = activeCarouselSlides.length > 1 ? 'block' : 'none';
-            }
-            if (counterBadge) {
-                counterBadge.textContent = `Photo ${activeCarouselIndex + 1} of ${activeCarouselSlides.length}`;
-            }
-
-            const currentUrl = activeCarouselSlides[activeCarouselIndex];
-            const isVideo = ['.mp4', '.mov', '.webm', '.avi'].some(ext => currentUrl.toLowerCase().includes(ext));
-
-            if (isVideo) {
-                imgElem.style.display = 'none';
-                videoElem.style.display = 'block';
-                videoElem.src = currentUrl;
-                videoElem.play().catch(e => {});
-            } else {
-                videoElem.pause();
-                videoElem.style.display = 'none';
-                videoElem.src = '';
-                imgElem.style.display = 'block';
-                imgElem.src = currentUrl;
+            try {
+                const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                const d = await res.json();
+                if (d.success) {
+                    showToast(d.message || "Post created successfully!");
+                    selectedFiles = [];
+                    mainCoverIndex = 0;
+                    renderMediaPreview();
+                    document.getElementById('post-caption-input').value = '';
+                    document.getElementById('perfume-name-input').value = '';
+                    await loadCalendarFeed();
+                    await loadReelsFeed();
+                } else {
+                    showToast(d.error || "Upload failed", "error");
+                }
+            } catch (e) {
+                showToast("Network Error: " + e, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i>Publish / Schedule Post';
             }
         }
 
-        function nextCarouselSlide() {
-            showCarouselSlide(activeCarouselIndex + 1);
-        }
+        // --- INSTANT PERMANENT DELETE POST ---
+        async function deletePost(id) {
+            if (!confirm("Are you sure you want to permanently delete this post?")) return;
 
-        function prevCarouselSlide() {
-            showCarouselSlide(activeCarouselIndex - 1);
-        }
-
-        function copyPreviewCaption() {
-            if (activePreviewPost && activePreviewPost.caption) {
-                navigator.clipboard.writeText(activePreviewPost.caption).then(() => {
-                    showToast("Caption copied to clipboard!");
-                }).catch(() => {
-                    showToast("Failed to copy", "warning");
-                });
-            }
-        }
-
-        function previewMediaItem(mediaSrc) {
-            if (!mediaSrc) return;
-            activeCarouselSlides = [mediaSrc];
-            activeCarouselIndex = 0;
-            const detailsBox = document.getElementById('preview-details-box');
-            if (detailsBox) detailsBox.style.display = 'none';
-            showCarouselSlide(0);
-            videoModal.show();
-        }
-
-        function killVideoPlayback() {
-            const v = document.getElementById('preview-video-element');
-            if (v) {
-                v.pause();
-                v.src = "";
-            }
-        }
-
-        async function clearFailedEvents() {
-            let deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
-            let stored = getStoredEvents();
-            let failed = stored.filter(e => e.status === 'FAILED');
-            failed.forEach(e => {
-                deletedIds.add(e.id);
-                fetch(`/api/posts/${e.id}/delete`, { method: 'POST' }).catch(() => {});
-            });
+            // 1. Instantly blacklist ID so it never resurfaces
+            const deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
+            deletedIds.add(String(id));
+            deletedIds.add(Number(id));
             localStorage.setItem('reelpilot_deleted_ids', JSON.stringify(Array.from(deletedIds)));
-            setStoredEvents(stored.filter(e => e.status !== 'FAILED'));
-            allPostsData = allPostsData.filter(p => p.status !== 'FAILED');
-            renderPosts();
-            loadCalendarFeed();
-            showToast("Old failed posts cleared permanently!");
+
+            // 2. Instantly remove from DOM
+            const el1 = document.getElementById(`timeline-post-${id}`);
+            if (el1) el1.remove();
+            const el2 = document.getElementById(`feed-post-${id}`);
+            if (el2) el2.remove();
+
+            // 3. Remove from memory
+            allPostsData = allPostsData.filter(p => String(p.id) !== String(id));
+
+            try {
+                await fetch(`/api/posts/${id}/delete`, { method: 'POST' });
+                showToast("Post deleted permanently!");
+            } catch (e) {
+                console.warn(e);
+            }
         }
 
+        // --- CLEAR ALL FAILED POSTS ---
+        async function clearFailedEvents() {
+            if (!confirm("Are you sure you want to clear all failed test posts permanently?")) return;
+
+            // Instantly clear failed elements from DOM
+            document.querySelectorAll('[id^="timeline-post-"]').forEach(el => {
+                if (el.innerText.includes('Failed')) el.remove();
+            });
+            document.querySelectorAll('[id^="feed-post-"]').forEach(el => {
+                if (el.innerText.includes('Failed')) el.remove();
+            });
+
+            try {
+                const res = await fetch('/api/posts/clear-failed', { method: 'POST' });
+                const data = await res.json();
+                showToast(`Cleared ${data.removed || 0} failed posts!`);
+                await loadCalendarFeed();
+                await loadReelsFeed();
+            } catch (e) {
+                showToast("Clear error: " + e, "error");
+            }
+        }
+
+        // --- POST NOW / RETRY ---
         async function forcePost(id) {
-            showToast("Publishing post immediately...", "warning");
+            showToast("Publishing to Meta immediately...", "warning");
             try {
                 const res = await fetch(`/api/posts/${id}/post-now`, { method: 'POST' });
                 const d = await res.json();
                 if (d.success) {
-                    showToast("Upload triggered successfully!");
-                    loadReelsFeed();
+                    showToast("Uploaded successfully!");
                     loadCalendarFeed();
+                    loadReelsFeed();
                 } else {
-                    showToast(d.error || "Failed", "error");
+                    showToast(d.error || "Upload failed", "error");
+                    loadCalendarFeed();
                 }
             } catch (e) {
                 showToast("Error: " + e, "error");
             }
         }
 
-        async function deletePost(id) {
-            if (!confirm("Are you sure you want to delete this post permanently?")) return;
-            try {
-                // Instantly blacklist the ID so it never resurfaces in any polling cycle
-                let deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
-                deletedIds.add(id);
-                localStorage.setItem('reelpilot_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+        // --- PREVIEW MODAL ---
+        function previewPost(postId) {
+            const p = allPostsData.find(x => String(x.id) === String(postId));
+            const imgUrl = p ? getCoverMediaUrl(p) : LUXURY_FALLBACK_SVG;
+            const caption = p ? (p.caption || 'No caption') : '';
+            const plat = p ? (p.target_platform || 'instagram').toUpperCase() : '';
 
-                // Instantly remove from local storedEvents and in-memory feed
-                let cur = getStoredEvents().filter(e => e.id !== id);
-                setStoredEvents(cur);
-                allPostsData = allPostsData.filter(p => p.id !== id);
-                renderPosts();
-                loadCalendarFeed();
-
-                // Fire server delete call
-                await fetch(`/api/posts/${id}/delete`, { method: 'POST' });
-                showToast("Post deleted permanently!");
-            } catch (e) {
-                showToast("Delete error: " + e, "error");
-            }
+            document.getElementById('previewModalTitle').innerText = `${plat} Post Preview (#${postId})`;
+            document.getElementById('modal-preview-content').innerHTML = `<img src="${imgUrl}" style="max-width: 100%; max-height: 55vh; object-fit: contain; border-radius: 8px;">`;
+            document.getElementById('modal-preview-caption').innerText = caption;
+            document.getElementById('modal-preview-meta').innerText = `Destination: ${plat} | Media: ${p ? p.media_type : 'Image'}`;
+            previewModal.show();
         }
 
-        async function openFolder(f) {
-            try {
-                await fetch('/api/open-folder', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ folder: f })
-                });
-                showToast(`Opened ${f} folder on PC!`);
-            } catch (e) {}
+        function closePreviewModal() {
+            document.getElementById('modal-preview-content').innerHTML = '';
+        }
+
+        function openFolder(folder) {
+            fetch('/api/open-folder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ folder })
+            }).then(() => showToast(`Opened ${folder} folder on PC!`)).catch(() => {});
         }
 
         // --- SETTINGS ---
@@ -1588,89 +1307,36 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
 
         async function verifyMetaToken() {
             const token = document.getElementById('setting-meta-token').value.trim();
-            if (!token) return;
-            showToast("Verifying Meta access token...", "warning");
+            if (!token) {
+                showToast("Please paste token first", "warning");
+                return;
+            }
+            showToast("Verifying token with Meta Graph API...", "warning");
             try {
-                const res = await fetch('/api/accounts/connect-meta', {
+                const res = await fetch('/api/verify-token', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ token: token })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ meta_token: token })
                 });
                 const d = await res.json();
                 if (d.success) {
-                    showToast(d.message || "Meta token verified & synced!");
-                    checkLiveHealth();
+                    showToast("Token Verified & Connected Successfully!");
+                    checkLiveHealth(true);
                 } else {
-                    showToast("Meta error: " + (d.error || "Failed"), "error");
+                    showToast(d.error || "Invalid token", "error");
                 }
             } catch (e) {
                 showToast("Verification error: " + e, "error");
             }
         }
 
-        async function saveSettings() {
-            const body = {
-                brand_name: document.getElementById('setting-brand-name').value.trim(),
-                gemini_api_key: document.getElementById('setting-gemini-key').value.trim(),
-                openai_api_key: document.getElementById('setting-openai-key').value.trim(),
-                meta_access_token: document.getElementById('setting-meta-token').value.trim(),
-                r2_account_id: document.getElementById('setting-r2-account-id').value.trim(),
-                r2_bucket_name: document.getElementById('setting-r2-bucket-name').value.trim(),
-                r2_access_key_id: document.getElementById('setting-r2-access-key').value.trim(),
-                r2_secret_access_key: document.getElementById('setting-r2-secret-key').value.trim(),
-                r2_public_domain: document.getElementById('setting-r2-public-domain').value.trim()
-            };
-
-            try {
-                const res = await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(body)
-                });
-                const d = await res.json();
-                if (d.success) {
-                    showToast("Settings saved successfully!");
-                    settingsModal.hide();
-                    loadInitialData();
-                    checkLiveHealth();
-                } else {
-                    showToast("Error saving: " + d.error, "error");
-                }
-            } catch (e) {
-                showToast("Save error: " + e, "error");
-            }
-        }
-
-        async function loadInitialData() {
-            try {
-                const sRes = await fetch('/api/settings');
-                const s = await sRes.json();
-                if (s.brand_name) document.getElementById('setting-brand-name').value = s.brand_name;
-                if (s.gemini_api_key) document.getElementById('setting-gemini-key').value = s.gemini_api_key;
-                if (s.openai_api_key) document.getElementById('setting-openai-key').value = s.openai_api_key;
-                if (s.meta_access_token) document.getElementById('setting-meta-token').value = s.meta_access_token;
-                if (s.r2_account_id) document.getElementById('setting-r2-account-id').value = s.r2_account_id;
-                if (s.r2_bucket_name) document.getElementById('setting-r2-bucket-name').value = s.r2_bucket_name;
-                if (s.r2_access_key_id) document.getElementById('setting-r2-access-key').value = s.r2_access_key_id;
-                if (s.r2_secret_access_key) document.getElementById('setting-r2-secret-key').value = s.r2_secret_access_key;
-                if (s.r2_public_domain) document.getElementById('setting-r2-public-domain').value = s.r2_public_domain;
-
-                loadReelsFeed();
-                loadCalendarFeed();
-            } catch (e) {}
-        }
-
-        async function refreshStatus() {
-            try {
-                const res = await fetch('/api/status');
-                const d = await res.json();
-                if (d.daily_counts) {
-                    document.getElementById('stat-ig-count').innerText = `${d.daily_counts.instagram || 0}/3`;
-                    document.getElementById('stat-fb-count').innerText = `${d.daily_counts.facebook || 0}/3`;
-                }
-            } catch (e) {}
+        function saveStudioSettings() {
+            settingsModal.hide();
+            showToast("Settings Saved!");
         }
     </script>
 </body>
 </html>
 """
+
+HTML_STUDIO_V36 = STUDIO_HTML

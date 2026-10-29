@@ -454,6 +454,32 @@ def execute_post_upload(post_id: int, db=None):
     else:
         photo_paths = [media_to_upload]
 
+    # Ensure all photo paths are public HTTP/HTTPS URLs for Meta Graph API
+    from app.modules.storage_service import storage_service
+    validated_photos = []
+    for p in photo_paths:
+        if isinstance(p, str) and (p.startswith("http://") or p.startswith("https://")):
+            validated_photos.append(p)
+        elif isinstance(p, str) and os.path.exists(p):
+            cdn_url = storage_service.upload_file(p)
+            validated_photos.append(cdn_url if cdn_url else p)
+        else:
+            validated_photos.append(p)
+    photo_paths = validated_photos
+
+    if post.target_platform == Platform.INSTAGRAM.value:
+        invalid_urls = [p for p in photo_paths if not str(p).startswith("http")]
+        if invalid_urls:
+            err_msg = f"Instagram requires public HTTPS URLs. Media '{invalid_urls[0]}' could not be reached by CDN."
+            if db:
+                db.update_post(post.id, status=PostStatus.FAILED.value, error_message=err_msg)
+            try:
+                from app.modules.cloud_queue import cloud_queue
+                cloud_queue.update_post_status(post.id, status='FAILED', error_message=err_msg)
+            except Exception:
+                pass
+            return False, None, err_msg
+
     try:
         if post.target_platform == Platform.FACEBOOK.value:
             if post.media_type == "carousel" or len(photo_paths) > 1:

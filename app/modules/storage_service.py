@@ -13,7 +13,7 @@ from app.utils.logger import logger
 
 class StorageService:
     def __init__(self):
-        pass
+        self._r2_disabled = False
 
     def upload_file(self, file_path: str, custom_key: Optional[str] = None) -> Optional[str]:
         """
@@ -36,8 +36,8 @@ class StorageService:
         bucket_name = getattr(cfg, "r2_bucket_name", "").strip()
         public_domain = getattr(cfg, "r2_public_domain", "").strip()
 
-        # 1. Cloudflare R2 / S3 Storage (Primary Enterprise Storage)
-        if account_id and access_key and secret_key and bucket_name:
+        # 1. Cloudflare R2 / S3 Storage (Primary Enterprise Storage - if working)
+        if not self._r2_disabled and account_id and access_key and secret_key and bucket_name:
             try:
                 import boto3
                 from botocore.client import Config
@@ -49,7 +49,7 @@ class StorageService:
                     endpoint_url=f"https://{account_id}.r2.cloudflarestorage.com",
                     aws_access_key_id=access_key,
                     aws_secret_access_key=secret_key,
-                    config=Config(signature_version="s3v4"),
+                    config=Config(signature_version="s3v4", connect_timeout=3, read_timeout=5),
                     region_name="auto"
                 )
 
@@ -72,7 +72,8 @@ class StorageService:
                 logger.info(f"✅ [Storage] Uploaded to Cloudflare R2: {public_url}")
                 return public_url
             except Exception as e:
-                logger.warning(f"[Storage] Cloudflare R2 upload error: {e}. Trying CDN fallbacks...")
+                self._r2_disabled = True
+                logger.warning(f"[Storage] Cloudflare R2 upload error: {e}. Switching to direct image CDN fallbacks...")
 
         # 2. For Images: FreeImageHost (iili.io) - 100% Direct Permanent Image CDN
         if is_image:
@@ -88,12 +89,12 @@ class StorageService:
                         "source": b64_data,
                         "format": "json"
                     },
-                    timeout=25
+                    timeout=10
                 )
                 if resp.status_code == 200:
                     data = resp.json()
                     direct_img_url = data.get("image", {}).get("url")
-                    if direct_img_url:
+                    if direct_img_url and direct_img_url.startswith("http"):
                         logger.info(f"✅ [Storage] Direct Image CDN URL generated via iili: {direct_img_url}")
                         return direct_img_url
             except Exception as ie:
@@ -102,7 +103,7 @@ class StorageService:
         # 3. Catbox Permanent Direct Upload (Permanent direct binary storage for images & videos)
         try:
             with open(file_path, "rb") as f:
-                resp = requests.post("https://catbox.moe/user/api.php", data={"reqtype": "fileupload"}, files={"fileToUpload": f}, timeout=30)
+                resp = requests.post("https://catbox.moe/user/api.php", data={"reqtype": "fileupload"}, files={"fileToUpload": f}, timeout=12)
                 if resp.status_code in [200, 500] and resp.text.strip().startswith("http"):
                     direct_url = resp.text.strip()
                     logger.info(f"✅ [Storage] Direct Media CDN URL generated via Catbox: {direct_url}")
@@ -113,7 +114,7 @@ class StorageService:
         # 4. Uguu Direct Binary File CDN (Supports Images & Videos up to 100MB)
         try:
             with open(file_path, "rb") as f:
-                resp = requests.post("https://uguu.se/upload.php", files={"files[]": f}, timeout=30)
+                resp = requests.post("https://uguu.se/upload.php", files={"files[]": f}, timeout=10)
                 if resp.status_code == 200:
                     res_json = resp.json()
                     files = res_json.get("files", [])
@@ -124,14 +125,13 @@ class StorageService:
         except Exception as ue:
             logger.warning(f"[Storage] Uguu upload error: {ue}. Trying next fallback...")
 
-        # 5. Vercel Public Endpoint Fallback (for immediate streaming if running on server)
-        try:
-            rel_name = os.path.basename(file_path)
-            vercel_url = f"https://reelpilot-studio.vercel.app/api/media/{rel_name}"
-            logger.info(f"ℹ️ [Storage] Falling back to Vercel media URL: {vercel_url}")
-            return vercel_url
-        except Exception:
-            pass
+        # 5. Local endpoint fallback (only if local server is serving)
+        if not os.environ.get("VERCEL"):
+            try:
+                rel_name = os.path.basename(file_path)
+                return f"/api/media/{rel_name}"
+            except Exception:
+                pass
 
         return None
 
