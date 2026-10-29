@@ -1,21 +1,5 @@
 {
-  "scheduled": [
-    {
-      "id": 2,
-      "target_platform": "facebook",
-      "caption": "Step into Unrivaled Elegance with Ice Blue (50ml) by JANI'S Perfume. 👑\r\n\r\nA masterclass in olfactory craftsmanship designed for those who command the room without saying a word.\r\n\r\n💎 Olfactory Profile: Top: Frosted Bergamot, Sweet Mandarin Orange Heart: Crisp Green Tea, Blackcurrant Buds Base: Snowy White Musk, Sandalwood\r\n✨ Projection & Longevity: Beast Mode Performance with a velvety, intoxicating sillage.\r\n💰 Exclusive Price: 2700\r\n\r\n🌐 𝐖𝐞𝐛𝐬𝐢𝐭𝐞 𝐂𝐡𝐞𝐜𝐤𝐨𝐮𝐭: janisperfumes.com\r\n💬 𝐏𝐫𝐞𝐟𝐞𝐫 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩: 03134454899\r\n📩 𝐒𝐞𝐧𝐝 𝐮𝐬 𝐚 𝐃𝐌 𝐭𝐨 𝐨𝐫𝐝𝐞𝐫 𝐝𝐢𝐫𝐞𝐜𝐭𝐥𝐲!\r\n\r\n#JanisPerfumes #IceBlue #LuxuryFragrance #OudPerfume #NichePerfume #ViralPerfume #PakistanLuxury",
-      "hashtags": "#JanisPerfume #Luxury #Fragrance #Trending",
-      "scheduled_time": "2026-10-29T22:02:00.000Z",
-      "media_type": "carousel",
-      "media_urls": [
-        "https://iili.io/n8snUyg.jpg",
-        "https://iili.io/n8sn4wJ.jpg",
-        "https://iili.io/n8sninR.jpg"
-      ],
-      "status": "SCHEDULED",
-      "created_at": "2026-10-29T22:01:34.974504+00:00"
-    }
-  ],
+  "scheduled": [],
   "history": [
     {
       "id": 1,
@@ -34,6 +18,24 @@
       "remote_media_id": "18001959783040725",
       "remote_url": "https://www.instagram.com/p/18001959783040725/",
       "updated_at": "2026-10-29T22:02:33.794985+00:00"
+    },
+    {
+      "id": 2,
+      "target_platform": "facebook",
+      "caption": "Step into Unrivaled Elegance with Ice Blue (50ml) by JANI'S Perfume. 👑\r\n\r\nA masterclass in olfactory craftsmanship designed for those who command the room without saying a word.\r\n\r\n💎 Olfactory Profile: Top: Frosted Bergamot, Sweet Mandarin Orange Heart: Crisp Green Tea, Blackcurrant Buds Base: Snowy White Musk, Sandalwood\r\n✨ Projection & Longevity: Beast Mode Performance with a velvety, intoxicating sillage.\r\n💰 Exclusive Price: 2700\r\n\r\n🌐 𝐖𝐞𝐛𝐬𝐢𝐭𝐞 𝐂𝐡𝐞𝐜𝐤𝐨𝐮𝐭: janisperfumes.com\r\n💬 𝐏𝐫𝐞𝐟𝐞𝐫 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩: 03134454899\r\n📩 𝐒𝐞𝐧𝐝 𝐮𝐬 𝐚 𝐃𝐌 𝐭𝐨 𝐨𝐫𝐝𝐞𝐫 𝐝𝐢𝐫𝐞𝐜𝐭𝐥𝐲!\r\n\r\n#JanisPerfumes #IceBlue #LuxuryFragrance #OudPerfume #NichePerfume #ViralPerfume #PakistanLuxury",
+      "hashtags": "#JanisPerfume #Luxury #Fragrance #Trending",
+      "scheduled_time": "2026-10-29T22:02:00.000Z",
+      "media_type": "carousel",
+      "media_urls": [
+        "https://iili.io/n8snUyg.jpg",
+        "https://iili.io/n8sn4wJ.jpg",
+        "https://iili.io/n8sninR.jpg"
+      ],
+      "status": "UPLOADED",
+      "created_at": "2026-10-29T22:01:34.974504+00:00",
+      "remote_media_id": "800869286434757_122187517034976604",
+      "remote_url": "https://www.facebook.com/800869286434757_122187517034976604",
+      "updated_at": "2026-10-29T22:02:41.507571+00:00"
     }
   ]
 }
