@@ -15,6 +15,14 @@ STUDIO_HTML = """<!DOCTYPE html>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <!-- Mobile PWA Meta & Icons -->
+    <meta name="theme-color" content="#070a12">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ReelPilot">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+
 
     <style>
         :root {
@@ -382,9 +390,15 @@ STUDIO_HTML = """<!DOCTYPE html>
                     <span id="nav-status-text">Checking Live Connection...</span>
                 </div>
 
+                <button class="btn btn-sm btn-outline-info rounded-pill px-3 fw-bold ms-1" id="btn-install-app" onclick="handlePwaInstall()">
+                    <i class="fa-solid fa-mobile-screen me-1"></i> Install App
+                </button>
                 <button class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold ms-1" onclick="openSettingsModal()">
                     <i class="fa-solid fa-sliders me-1"></i> Settings
                 </button>
+                <a href="/logout" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold ms-1" title="Log Out">
+                    <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
+                </a>
             </div>
         </div>
     </nav>
@@ -758,6 +772,37 @@ STUDIO_HTML = """<!DOCTYPE html>
                         <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
                         <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold" id="confirmModalBtn">Delete</button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- IOS PWA INSTALL INSTRUCTIONS MODAL -->
+    <div class="modal fade" id="modalIosInstall" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border border-secondary rounded-4 shadow-lg p-3">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-white"><i class="fa-brands fa-apple text-warning me-2"></i>Install on iPhone / iPad</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <p class="text-white-50 small mb-3">Safari mein sirf 3 aasan steps mein ReelPilot Studio ko apne iPhone ki Home Screen par app ki tarah add karein:</p>
+                    <div class="d-flex align-items-center gap-3 p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary mb-2">
+                        <span class="badge bg-warning text-dark fs-6 rounded-circle px-2 py-1">1</span>
+                        <div class="small">Safari ke bottom bar par <strong>Share</strong> icon dabayein <i class="fa-solid fa-arrow-up-from-bracket text-info ms-1"></i></div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary mb-2">
+                        <span class="badge bg-warning text-dark fs-6 rounded-circle px-2 py-1">2</span>
+                        <div class="small">Neechay scroll karein aur <strong>Add to Home Screen</strong> dabayein <i class="fa-regular fa-square-plus text-success ms-1"></i></div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary">
+                        <span class="badge bg-warning text-dark fs-6 rounded-circle px-2 py-1">3</span>
+                        <div class="small">Top right par <strong>Add</strong> dabayein. App icon aapke mobile par bina URL bar ke native app ki tarah open hoga!</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-sm btn-gold rounded-pill px-4" data-bs-dismiss="modal">Samajh Gaya!</button>
                 </div>
             </div>
         </div>

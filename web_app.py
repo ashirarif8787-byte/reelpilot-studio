@@ -16,7 +16,7 @@ import json
 import threading
 import requests
 from datetime import datetime, timedelta, timezone
-from flask import Flask, request, jsonify, render_template_string, send_from_directory
+from flask import Flask, request, jsonify, render_template_string, send_from_directory, session, redirect, url_for
 from werkzeug.utils import secure_filename
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -41,6 +41,7 @@ from app.modules.storage_service import storage_service
 from app.utils.logger import register_ui_log_listener, logger
 from app.utils.helpers import format_delay_time
 from studio_template import HTML_STUDIO_V36
+from login_template import LOGIN_HTML
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "reelpilot_v36_ultimate"
@@ -110,6 +111,74 @@ def save_accounts(data):
 # --------------------------------------------------------------------
 # ROUTES & ENDPOINTS
 # --------------------------------------------------------------------
+# --------------------------------------------------------------------
+# AUTHENTICATION & SECURITY (Ashir87 Owner Credentials)
+# --------------------------------------------------------------------
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "Ashir87")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "ashir88090@")
+
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "janis-perfumes-ashir87-secure-auth-vault-2026")
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    PERMANENT_SESSION_LIFETIME=timedelta(days=30),
+)
+
+@app.before_request
+def require_authentication():
+    allowed_prefixes = (
+        "/login",
+        "/logout",
+        "/static",
+        "/manifest.json",
+        "/sw.js",
+        "/api/cron/check-due",
+        "/api/media",
+        "/api/video"
+    )
+    req_path = request.path
+    if any(req_path == p or req_path.startswith(p + "/") or req_path.startswith(p) for p in allowed_prefixes):
+        return None
+
+    if not session.get("authenticated"):
+        if req_path.startswith("/api/"):
+            return jsonify({"error": "Unauthorized. Please login.", "redirect": "/login"}), 401
+        return redirect("/login")
+
+@app.route("/login", methods=["GET", "POST"])
+def login_route():
+    if request.method == "POST":
+        data = request.get_json(silent=True) or request.form or {}
+        u = str(data.get("username", "")).strip()
+        p = str(data.get("password", ""))
+
+        if u == ADMIN_USERNAME and p == ADMIN_PASSWORD:
+            session.permanent = True
+            session["authenticated"] = True
+            session["username"] = ADMIN_USERNAME
+            logger.info(f"✅ [Auth] Owner '{u}' authenticated successfully.")
+            return jsonify({"success": True, "redirect": "/"})
+
+        logger.warning(f"⚠️ [Auth] Failed login attempt for username '{u}'. Access denied.")
+        return jsonify({"success": False, "error": "Invalid Username or Password! Access Denied."}), 401
+
+    if session.get("authenticated"):
+        return redirect("/")
+    return render_template_string(LOGIN_HTML)
+
+@app.route("/logout", methods=["GET", "POST"])
+def logout_route():
+    session.clear()
+    return redirect("/login")
+
+@app.route("/manifest.json")
+def pwa_manifest():
+    return send_from_directory(os.path.join(ROOT_DIR, "static"), "manifest.json", mimetype="application/manifest+json")
+
+@app.route("/sw.js")
+def pwa_sw():
+    return send_from_directory(os.path.join(ROOT_DIR, "static"), "sw.js", mimetype="application/javascript")
+
 
 @app.route("/")
 def index():
