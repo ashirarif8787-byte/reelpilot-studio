@@ -455,6 +455,12 @@ def api_open_folder():
 
 @app.route("/api/media/<path:filename>")
 def api_media(filename):
+    clean_name = os.path.basename(filename)
+    # Security: block hidden files, system files, source code & database files
+    blocked_exts = (".py", ".json", ".db", ".env", ".sqlite", ".bat", ".cmd", ".sh", ".exe")
+    if clean_name.startswith(".") or any(clean_name.lower().endswith(ext) for ext in blocked_exts):
+        return jsonify({"error": "Access denied"}), 403
+    filename = clean_name
     search_dirs = [
         os.path.join(ROOT_DIR, "studio_uploads"),
         os.path.join(ROOT_DIR, "assets"),
@@ -637,6 +643,10 @@ def api_upload():
             fname = secure_filename(file.filename)
             if not fname:
                 fname = f"media_{int(time.time())}_{idx}.jpg"
+            allowed_exts = {".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov", ".avi", ".webm"}
+            f_ext = os.path.splitext(fname)[1].lower()
+            if f_ext not in allowed_exts:
+                return jsonify({"success": False, "error": f"Invalid file format '{f_ext}'. Allowed formats: JPG, PNG, WEBP, MP4, MOV, WEBM"}), 400
             unique_fname = f"{int(time.time())}_{idx}_{fname}"
             target_path = os.path.join(upload_dir, unique_fname)
             file.save(target_path)

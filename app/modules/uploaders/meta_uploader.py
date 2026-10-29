@@ -475,11 +475,16 @@ class MetaUploader(BaseUploader):
         try:
             for idx, m_url in enumerate(media_urls[:10]):
                 init_url = f"{GRAPH_API_BASE}/{self.ig_account_id}/media"
+                is_video_item = any(m_url.lower().endswith(vext) for vext in [".mp4", ".mov", ".webm", ".avi"])
                 payload = {
-                    "image_url": m_url,
                     "is_carousel_item": "true",
                     "access_token": self.access_token
                 }
+                if is_video_item:
+                    payload["media_type"] = "VIDEO"
+                    payload["video_url"] = m_url
+                else:
+                    payload["image_url"] = m_url
                 resp = requests.post(init_url, data=payload, timeout=30)
                 data = resp.json()
                 self._check_for_token_expiration(data)

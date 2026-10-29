@@ -726,18 +726,48 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- MEDIA PREVIEW MODAL -->
+    <!-- MEDIA PREVIEW & POST INSPECTOR MODAL -->
     <div class="modal fade" id="modalVideoPlayer" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content bg-dark text-white border border-secondary rounded-4 shadow-lg">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title fw-bold text-white"><i class="fa-solid fa-eye text-primary me-2"></i>Media Preview</h5>
+            <div class="modal-content text-white border border-secondary rounded-4 shadow-lg" style="background: #0b1120 !important;">
+                <div class="modal-header border-secondary py-2 px-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-gem text-warning fs-5"></i>
+                        <h6 class="modal-title fw-bold text-white mb-0" id="preview-modal-title">Post Preview & Details</h6>
+                        <span id="preview-platform-badge"></span>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="killVideoPlayback()"></button>
                 </div>
-                <div class="modal-body text-center p-3">
-                    <div id="media-viewer-container" style="max-height: 550px; display: flex; justify-content: center; align-items: center; background: #000; border-radius: 12px; overflow: hidden;">
-                        <video id="preview-video-element" controls style="max-height: 520px; max-width: 100%; display: none;"></video>
-                        <img id="preview-image-element" style="max-height: 520px; max-width: 100%; display: none; object-fit: contain;">
+                <div class="modal-body p-3">
+                    <!-- Media Stage with Carousel Overlay Navigation -->
+                    <div id="media-viewer-container" style="position: relative; max-height: 480px; min-height: 280px; display: flex; justify-content: center; align-items: center; background: #030712; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                        <video id="preview-video-element" controls style="max-height: 480px; max-width: 100%; display: none;"></video>
+                        <img id="preview-image-element" style="max-height: 480px; max-width: 100%; display: none; object-fit: contain;">
+                        
+                        <!-- Carousel Navigation Controls -->
+                        <div id="carousel-nav-controls" style="display: none;">
+                            <button type="button" class="btn btn-dark bg-opacity-75 text-white border-0 rounded-circle position-absolute start-0 top-50 translate-middle-y ms-2 shadow" style="width: 42px; height: 42px; z-index: 10;" onclick="prevCarouselSlide()">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <button type="button" class="btn btn-dark bg-opacity-75 text-white border-0 rounded-circle position-absolute end-0 top-50 translate-middle-y me-2 shadow" style="width: 42px; height: 42px; z-index: 10;" onclick="nextCarouselSlide()">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                            <div class="position-absolute bottom-0 start-50 translate-middle-x mb-2 px-3 py-1 rounded-pill bg-dark bg-opacity-75 text-white small fw-bold shadow border border-secondary" id="carousel-counter-badge" style="z-index: 10; font-size: 0.75rem;">
+                                Photo 1 of 3
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Post Metadata & Full Caption Inspector -->
+                    <div id="preview-details-box" class="mt-3 p-3 bg-dark rounded-3 border border-secondary border-opacity-50 text-start" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-secondary border-opacity-25">
+                            <span class="small text-white-50 fw-semibold"><i class="fa-solid fa-align-left me-1 text-primary"></i> Full Published Caption & Olfactory Notes</span>
+                            <button class="btn btn-xs btn-outline-info rounded-pill py-0 px-2 fw-semibold" style="font-size: 0.75rem;" onclick="copyPreviewCaption()">
+                                <i class="fa-regular fa-copy me-1"></i> Copy Caption
+                            </button>
+                        </div>
+                        <div id="preview-full-caption" class="small text-white mb-2" style="white-space: pre-wrap; max-height: 160px; overflow-y: auto; font-family: inherit; line-height: 1.4; opacity: 0.95;"></div>
+                        <div id="preview-full-hashtags" class="text-info small fw-bold text-truncate" style="font-size: 0.75rem;"></div>
                     </div>
                 </div>
             </div>
@@ -1221,7 +1251,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                                 </div>
 
                                 <div class="d-flex gap-2 align-items-center mb-2 p-2 bg-dark rounded-3 border border-secondary border-opacity-50">
-                                    <img src="${thumbUrl}" style="width: 48px; height: 48px; border-radius: 6px; object-fit: cover; flex-shrink: 0;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'48\' height=\'48\' viewBox=\'0 0 48 48\'><rect width=\'100%\' height=\'100%\' fill=\'%23111827\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%236b7280\' font-family=\'sans-serif\' font-size=\'10\'>IMG</text></svg>';">
+                                    <img src="${thumbUrl}" style="width: 48px; height: 48px; border-radius: 6px; object-fit: cover; flex-shrink: 0; cursor: pointer;" onclick="previewPost(${ev.id})" title="Click to Inspect" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'48\' height=\'48\' viewBox=\'0 0 48 48\'><rect width=\'100%\' height=\'100%\' fill=\'%23111827\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%236b7280\' font-family=\'sans-serif\' font-size=\'10\'>IMG</text></svg>';">
                                     <div style="line-height: 1.25; overflow: hidden;">
                                         <div class="fw-bold text-warning" style="font-size: 0.72rem;"><i class="fa-solid fa-calendar-day me-1"></i>${dtInfo.exact_date}</div>
                                         <div class="fw-bold text-white" style="font-size: 0.82rem;"><i class="fa-solid fa-clock me-1 text-info"></i>${dtInfo.exact_time}</div>
@@ -1310,7 +1340,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                 html += `
                     <div class="col-6 col-md-4 col-lg-3 col-xl-2">
                         <div class="reel-card">
-                            <div class="reel-thumb-container" onclick="previewMediaItem('${thumbUrl}')">
+                            <div class="reel-thumb-container" onclick="previewPost(${p.id})">
                                 <img src="${thumbUrl}" class="reel-thumb-img" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'200\' viewBox=\'0 0 300 200\'><rect width=\'100%\' height=\'100%\' fill=\'%23111827\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%236b7280\' font-family=\'sans-serif\' font-size=\'13\'>Crown Kredence</text></svg>';">
                                 <div class="reel-play-btn"><i class="fa-solid fa-${p.media_type === 'video' ? 'play' : 'eye'}"></i></div>
                                 <div style="position: absolute; top: 6px; left: 6px; display: flex; gap: 3px;">${platBadge} ${typeBadge}</div>
@@ -1329,7 +1359,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                                         `<button class="btn btn-sm btn-success rounded-pill flex-grow-1 fw-bold py-1 px-1" style="font-size: 0.7rem;" onclick="forcePost(${p.id})"><i class="fa-solid fa-bolt me-1"></i>Post</button>` : 
                                         (p.remote_url ? `<a href="${p.remote_url}" target="_blank" class="btn btn-sm btn-outline-info rounded-pill flex-grow-1 fw-bold py-1 px-1" style="font-size: 0.7rem;"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Live</a>` : '')
                                     }
-                                    <button class="btn btn-sm btn-outline-light rounded-pill px-2 py-1" style="font-size: 0.7rem;" onclick="previewMediaItem('${thumbUrl}')" title="Preview"><i class="fa-solid fa-eye"></i></button>
+                                    <button class="btn btn-sm btn-outline-light rounded-pill px-2 py-1" style="font-size: 0.7rem;" onclick="previewPost(${p.id})" title="Preview Full Album & Caption"><i class="fa-solid fa-eye"></i></button>
                                     <button class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" style="font-size: 0.7rem;" onclick="deletePost(${p.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
                                 </div>
                             </div>
@@ -1340,31 +1370,120 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             container.innerHTML = html;
         }
 
-        function previewMediaItem(mediaSrc) {
-            if (!mediaSrc) return;
+        // Carousel & Inspector State
+        let activeCarouselSlides = [];
+        let activeCarouselIndex = 0;
+        let activePreviewPost = null;
+
+        function previewPost(postId) {
+            const p = allPostsData.find(x => x.id === postId) || getStoredEvents().find(x => x.id === postId);
+            if (!p) return;
+            activePreviewPost = p;
+
+            // Platform badge
+            const plat = p.target_platform || 'instagram';
+            const badgeElem = document.getElementById('preview-platform-badge');
+            if (badgeElem) {
+                badgeElem.innerHTML = plat === 'facebook' ? 
+                    '<span class="badge bg-primary px-2 py-1" style="font-size:0.7rem;"><i class="fa-brands fa-facebook me-1"></i> FACEBOOK</span>' : 
+                    '<span class="badge px-2 py-1" style="background: var(--insta-grad); font-size:0.7rem;"><i class="fa-brands fa-instagram me-1"></i> INSTAGRAM</span>';
+            }
+
+            // Extract all media items
+            let mediaItems = [];
+            let rawPath = p.processed_path || p.file_path || '';
+            if (typeof rawPath === 'string' && rawPath.trim().startsWith('[')) {
+                try {
+                    const parsed = JSON.parse(rawPath);
+                    if (Array.isArray(parsed)) mediaItems = parsed;
+                } catch(e) {}
+            } else if (rawPath) {
+                mediaItems = [rawPath];
+            }
+
+            // Populate caption & hashtags
+            const detailsBox = document.getElementById('preview-details-box');
+            const capElem = document.getElementById('preview-full-caption');
+            const hashElem = document.getElementById('preview-full-hashtags');
+            if (detailsBox && capElem) {
+                detailsBox.style.display = 'block';
+                capElem.textContent = p.caption || 'No caption available.';
+                if (hashElem) hashElem.textContent = p.hashtags || '';
+            }
+
+            // Handle slides
+            activeCarouselSlides = mediaItems.map(item => {
+                let target = String(item).trim();
+                if (target.startsWith('http://') || target.startsWith('https://') || target.startsWith('/api/')) return target;
+                const fname = target.split(/[\\/]/).pop();
+                return `/api/media/${encodeURIComponent(fname)}`;
+            });
+            activeCarouselIndex = 0;
+
+            showCarouselSlide(activeCarouselIndex);
+            videoModal.show();
+        }
+
+        function showCarouselSlide(idx) {
+            const navControls = document.getElementById('carousel-nav-controls');
+            const counterBadge = document.getElementById('carousel-counter-badge');
             const videoElem = document.getElementById('preview-video-element');
             const imgElem = document.getElementById('preview-image-element');
 
-            let fullUrl = String(mediaSrc).trim();
-            if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://') && !fullUrl.startsWith('/api/')) {
-                const fname = fullUrl.split(/[\\/]/).pop();
-                fullUrl = `/api/media/${encodeURIComponent(fname)}`;
+            if (!activeCarouselSlides || activeCarouselSlides.length === 0) return;
+            if (idx < 0) idx = activeCarouselSlides.length - 1;
+            if (idx >= activeCarouselSlides.length) idx = 0;
+            activeCarouselIndex = idx;
+
+            if (navControls) {
+                navControls.style.display = activeCarouselSlides.length > 1 ? 'block' : 'none';
+            }
+            if (counterBadge) {
+                counterBadge.textContent = `Photo ${activeCarouselIndex + 1} of ${activeCarouselSlides.length}`;
             }
 
-            const isVideo = ['.mp4', '.mov', '.webm', '.avi'].some(ext => fullUrl.toLowerCase().includes(ext));
+            const currentUrl = activeCarouselSlides[activeCarouselIndex];
+            const isVideo = ['.mp4', '.mov', '.webm', '.avi'].some(ext => currentUrl.toLowerCase().includes(ext));
 
             if (isVideo) {
                 imgElem.style.display = 'none';
                 videoElem.style.display = 'block';
-                videoElem.src = fullUrl;
+                videoElem.src = currentUrl;
                 videoElem.play().catch(e => {});
             } else {
                 videoElem.pause();
                 videoElem.style.display = 'none';
                 videoElem.src = '';
                 imgElem.style.display = 'block';
-                imgElem.src = fullUrl;
+                imgElem.src = currentUrl;
             }
+        }
+
+        function nextCarouselSlide() {
+            showCarouselSlide(activeCarouselIndex + 1);
+        }
+
+        function prevCarouselSlide() {
+            showCarouselSlide(activeCarouselIndex - 1);
+        }
+
+        function copyPreviewCaption() {
+            if (activePreviewPost && activePreviewPost.caption) {
+                navigator.clipboard.writeText(activePreviewPost.caption).then(() => {
+                    showToast("Caption copied to clipboard!");
+                }).catch(() => {
+                    showToast("Failed to copy", "warning");
+                });
+            }
+        }
+
+        function previewMediaItem(mediaSrc) {
+            if (!mediaSrc) return;
+            activeCarouselSlides = [mediaSrc];
+            activeCarouselIndex = 0;
+            const detailsBox = document.getElementById('preview-details-box');
+            if (detailsBox) detailsBox.style.display = 'none';
+            showCarouselSlide(0);
             videoModal.show();
         }
 
