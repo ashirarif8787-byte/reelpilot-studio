@@ -42,6 +42,65 @@ STUDIO_HTML = """<!DOCTYPE html>
             --luxury-glass: rgba(17, 24, 39, 0.72);
         }
 
+        
+        /* COMPREHENSIVE MOBILE RESPONSIVE OPTIMIZATIONS */
+        @media (max-width: 768px) {
+            .app-wrapper {
+                padding: 10px 8px 90px 8px !important;
+            }
+            .navbar-top {
+                padding: 10px 12px !important;
+            }
+            .brand-title {
+                font-size: 1.15rem !important;
+                letter-spacing: 0.5px !important;
+            }
+            .brand-title i {
+                margin-right: 4px !important;
+            }
+            .status-pill {
+                padding: 4px 8px !important;
+                font-size: 0.7rem !important;
+            }
+            .status-pill span {
+                max-width: 90px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: inline-block;
+                vertical-align: middle;
+            }
+            .card-pro {
+                padding: 14px 12px !important;
+                border-radius: 14px !important;
+                margin-bottom: 14px !important;
+            }
+            .timing-btn {
+                padding: 8px 4px !important;
+                font-size: 0.74rem !important;
+                border-radius: 8px !important;
+            }
+            .form-control, .form-select {
+                font-size: 0.86rem !important;
+                padding: 8px 10px !important;
+            }
+            .drop-zone-main {
+                padding: 20px 10px !important;
+            }
+            .timeline-card {
+                padding: 10px 10px !important;
+            }
+            .reel-thumb-container {
+                max-height: 130px !important;
+            }
+            .modal-dialog {
+                margin: 10px !important;
+            }
+            .modal-content {
+                padding: 6px !important;
+            }
+        }
+
         /* 100% CONTAINED SCREEN - ZERO HORIZONTAL OVERFLOW */
         html, body {
             margin: 0 !important;
@@ -390,20 +449,37 @@ STUDIO_HTML = """<!DOCTYPE html>
                     <span id="nav-status-text">Checking Live Connection...</span>
                 </div>
 
-                <button class="btn btn-sm btn-outline-info rounded-pill px-3 fw-bold ms-1" id="btn-install-app" onclick="handlePwaInstall()">
-                    <i class="fa-solid fa-mobile-screen me-1"></i> Install App
+                <button class="btn btn-sm btn-outline-info rounded-pill px-2 px-sm-3 fw-bold ms-1" id="btn-install-app" onclick="handlePwaInstall()" title="Install Mobile App">
+                    <i class="fa-solid fa-mobile-screen"></i> <span class="d-none d-sm-inline">App</span>
                 </button>
-                <button class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold ms-1" onclick="openSettingsModal()">
-                    <i class="fa-solid fa-sliders me-1"></i> Settings
+                <button class="btn btn-sm btn-outline-warning rounded-pill px-2 px-sm-3 fw-bold ms-1" onclick="openSettingsModal()" title="Settings">
+                    <i class="fa-solid fa-sliders"></i> <span class="d-none d-sm-inline">Settings</span>
                 </button>
-                <a href="/logout" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold ms-1" title="Log Out">
-                    <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
+                <a href="/logout" class="btn btn-sm btn-outline-danger rounded-pill px-2 px-sm-3 fw-bold ms-1" title="Log Out">
+                    <i class="fa-solid fa-right-from-bracket"></i> <span class="d-none d-sm-inline">Logout</span>
                 </a>
             </div>
         </div>
     </nav>
 
     <div class="app-wrapper">
+
+        <!-- PROMINENT MOBILE APP INSTALL BANNER (VISIBLE ON SMARTPHONES) -->
+        <div id="mobile-install-banner" class="d-md-none p-3 mb-3 rounded-4 shadow" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(6, 182, 212, 0.14) 100%); border: 1.5px solid rgba(245, 158, 11, 0.45);">
+            <div class="d-flex justify-content-between align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <img src="/static/icon-192.png" style="width: 42px; height: 42px; border-radius: 10px; border: 1.5px solid #f59e0b; flex-shrink: 0;" onerror="this.src='/static/apple-touch-icon.png'">
+                    <div style="line-height: 1.25;">
+                        <div class="fw-bold text-white small"><i class="fa-solid fa-crown text-warning me-1"></i>JANI'S Perfume App</div>
+                        <div class="text-white-50" style="font-size: 0.72rem;">Install native app on your phone</div>
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-gold rounded-pill px-3 py-1 fw-bold text-nowrap" onclick="handlePwaInstall()">
+                    <i class="fa-solid fa-download me-1"></i> Install
+                </button>
+            </div>
+        </div>
+
         <!-- TOP BRAND & CONNECTION SUMMARY STRIP -->
         <div class="card-pro p-3 mb-4">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
@@ -713,19 +789,71 @@ STUDIO_HTML = """<!DOCTYPE html>
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="small text-white-50 mb-1">Brand Name</label>
-                        <input type="text" id="setting-brand-name" class="form-control" value="JANI\'S Perfume">
+                <div class="modal-body p-3 p-md-4">
+                    <!-- Brand & Contact Section -->
+                    <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary border-opacity-50 mb-3">
+                        <div class="fw-bold text-warning small mb-2"><i class="fa-solid fa-crown me-1"></i>Brand & Contact Details</div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-12 col-md-4">
+                                <label class="small text-white-50 mb-1">Brand Name</label>
+                                <input type="text" id="setting-brand-name" class="form-control" value="JANI'S Perfume">
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="small text-white-50 mb-1">Official Website</label>
+                                <input type="text" id="setting-website" class="form-control" value="janisperfumes.com">
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="small text-white-50 mb-1">WhatsApp Number</label>
+                                <input type="text" id="setting-whatsapp" class="form-control" value="03134454899">
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="small text-white-50 mb-1">Meta Long-Lived Access Token</label>
-                        <textarea id="setting-meta-token" class="form-control" rows="3" placeholder="Paste your Meta Access Token here..."></textarea>
+
+                    <!-- Connected Social Accounts -->
+                    <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary border-opacity-50 mb-3">
+                        <div class="fw-bold text-primary small mb-2"><i class="fa-brands fa-meta me-1"></i>Connected Social Accounts</div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-12 col-md-6">
+                                <label class="small text-white-50 mb-1"><i class="fa-brands fa-instagram text-danger me-1"></i>Instagram Account ID</label>
+                                <input type="text" id="setting-ig-id" class="form-control" value="17841423338066933" readonly>
+                                <small class="text-white-50" style="font-size: 0.7rem;">@official_janisperfume (Linked)</small>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="small text-white-50 mb-1"><i class="fa-brands fa-facebook text-primary me-1"></i>Facebook Page ID</label>
+                                <input type="text" id="setting-fb-id" class="form-control" value="800869286434757" readonly>
+                                <small class="text-white-50" style="font-size: 0.7rem;">JANI's Perfume (Linked)</small>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" onclick="verifyMetaToken()">
-                            <i class="fa-solid fa-circle-check me-1"></i> Verify & Reconnect Token
+
+                    <!-- Meta Access Token -->
+                    <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary border-opacity-50 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="small text-white-50 mb-0 fw-bold"><i class="fa-solid fa-key text-warning me-1"></i>Meta Long-Lived Access Token</label>
+                            <span class="badge bg-success bg-opacity-25 text-success" id="setting-token-status">Active</span>
+                        </div>
+                        <textarea id="setting-meta-token" class="form-control mb-2" rows="2" placeholder="Paste your Meta Access Token here..."></textarea>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="verifyMetaToken()">
+                            <i class="fa-solid fa-circle-check me-1"></i> Test & Verify Live Connection
                         </button>
+                    </div>
+
+                    <!-- Daily Quota & Automation -->
+                    <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary border-opacity-50">
+                        <div class="fw-bold text-info small mb-2"><i class="fa-solid fa-robot me-1"></i>Daily Publishing Quota & Cloud Automation</div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="small text-white-50 mb-1">Instagram Daily Limit</label>
+                                <input type="number" id="setting-quota-ig" class="form-control" value="3" min="1" max="10">
+                            </div>
+                            <div class="col-6">
+                                <label class="small text-white-50 mb-1">Facebook Daily Limit</label>
+                                <input type="number" id="setting-quota-fb" class="form-control" value="3" min="1" max="10">
+                            </div>
+                        </div>
+                        <div class="text-white-50 small mt-2" style="font-size: 0.72rem;">
+                            <i class="fa-solid fa-check text-success me-1"></i>Autonomous 24/7 background scheduler active via CloudQueue.
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer border-secondary">
@@ -1395,10 +1523,42 @@ STUDIO_HTML = """<!DOCTYPE html>
             }).then(() => showToast(`Opened ${folder} folder on PC!`)).catch(() => {});
         }
 
-        // --- SETTINGS ---
-        function openSettingsModal() {
+
+        // --- SETTINGS MANAGEMENT ---
+        async function openSettingsModal() {
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                if (data) {
+                    if (data.brand_name) document.getElementById('setting-brand-name').value = data.brand_name;
+                    if (data.meta_access_token) document.getElementById('setting-meta-token').value = data.meta_access_token;
+                    if (data.daily_limit_insta) document.getElementById('setting-quota-ig').value = data.daily_limit_insta;
+                    if (data.daily_limit_facebook) document.getElementById('setting-quota-fb').value = data.daily_limit_facebook;
+                }
+            } catch (e) {}
             settingsModal.show();
         }
+
+        async ;
+            try {
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const d = await res.json();
+                if (d.success) {
+                    showToast("All Settings Saved & Applied!");
+                    settingsModal.hide();
+                    checkLiveHealth(true);
+                } else {
+                    showToast(d.error || "Save error", "error");
+                }
+            } catch (e) {
+                showToast("Save error: " + e, "error");
+            }
+        }
+
 
         async function verifyMetaToken() {
             const token = document.getElementById('setting-meta-token').value.trim();
@@ -1425,10 +1585,7 @@ STUDIO_HTML = """<!DOCTYPE html>
             }
         }
 
-        function saveStudioSettings() {
-            settingsModal.hide();
-            showToast("Settings Saved!");
-        }
+        
     </script>
 </body>
 </html>

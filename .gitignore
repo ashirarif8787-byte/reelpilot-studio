@@ -28,6 +28,9 @@ watch_folders/
 *.jpg
 *.jpeg
 *.png
+!static/*.png
+!static/*.ico
+!static/*.svg
 
 # OS generated files
 .DS_Store

@@ -179,6 +179,10 @@ def pwa_manifest():
 def pwa_sw():
     return send_from_directory(os.path.join(ROOT_DIR, "static"), "sw.js", mimetype="application/javascript")
 
+@app.route("/static/<path:filename>")
+def pwa_static(filename):
+    return send_from_directory(os.path.join(ROOT_DIR, "static"), filename)
+
 
 @app.route("/")
 def index():
