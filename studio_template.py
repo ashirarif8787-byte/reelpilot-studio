@@ -188,49 +188,54 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
         .reel-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            height: 100%;
         }
         .reel-card:hover {
-            transform: translateY(-3px);
+            transform: translateY(-2px);
             border-color: var(--primary);
-            box-shadow: 0 12px 30px rgba(99, 102, 241, 0.15);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
         }
         .reel-thumb-container {
             position: relative;
             width: 100%;
-            padding-top: 110%;
-            background: #000;
+            height: 160px;
+            background: #090d16;
             overflow: hidden;
             cursor: pointer;
         }
         .reel-thumb-img {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
         .reel-play-btn {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 48px;
-            height: 48px;
+            width: 36px;
+            height: 36px;
             background: rgba(0, 0, 0, 0.65);
-            border: 2px solid #fff;
+            border: 1.5px solid #fff;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #fff;
-            font-size: 1.2rem;
+            font-size: 0.95rem;
             backdrop-filter: blur(4px);
+            opacity: 0.85;
+            transition: transform 0.2s;
+        }
+        .reel-play-btn:hover {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
         }
 
         .feed-filter-btn {
@@ -1121,34 +1126,46 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             } catch (e) {}
         }
 
+        function getCoverMediaUrl(item) {
+            if (!item) return '';
+            if (item.cover_url && typeof item.cover_url === 'string' && item.cover_url.trim()) {
+                return item.cover_url.trim();
+            }
+            let target = item.processed_path || item.file_path || '';
+            if (typeof target === 'string' && target.trim().startsWith('[')) {
+                try {
+                    const arr = JSON.parse(target);
+                    if (Array.isArray(arr) && arr.length > 0) {
+                        target = arr[0] || '';
+                    }
+                } catch (e) {}
+            }
+            if (!target) return '';
+            target = String(target).trim();
+            if (target.startsWith('http://') || target.startsWith('https://')) {
+                return target;
+            }
+            const fname = target.split(/[\\/]/).pop();
+            return fname ? `/api/media/${encodeURIComponent(fname)}` : '';
+        }
+
         async function loadCalendarFeed() {
             const container = document.getElementById('calendar-feed-container');
-            let storedEvents = getStoredEvents();
+            let deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
 
             try {
                 const res = await fetch('/api/calendar');
                 const data = await res.json();
-                if (data.success && data.events && data.events.length > 0) {
-                    const serverIds = new Set(data.events.map(e => e.id));
-                    let merged = data.events.slice();
-                    storedEvents.forEach(se => {
-                        if (!serverIds.has(se.id) && (se.status === 'SCHEDULED' || se.status === 'UPLOADING' || se.status === 'FAILED')) {
-                            merged.push(se);
-                        }
-                    });
-                    storedEvents = merged;
-                    setStoredEvents(storedEvents);
-                } else if (storedEvents.length > 0) {
-                    // Cold start instance on Vercel: restore cached events in background
-                    fetch('/api/calendar/restore', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ events: storedEvents })
-                    }).catch(() => {});
+                if (data.success && Array.isArray(data.events)) {
+                    // Server is single source of truth! Keep only events user hasn't deleted
+                    const validEvents = data.events.filter(e => !deletedIds.has(e.id));
+                    setStoredEvents(validEvents);
                 }
             } catch (e) {
-                console.warn("Calendar fetch warning, using stored events:", e);
+                console.warn("Calendar fetch warning:", e);
             }
+
+            let storedEvents = getStoredEvents().filter(e => !deletedIds.has(e.id));
 
             if (!storedEvents || storedEvents.length === 0) {
                 container.innerHTML = `
@@ -1163,95 +1180,79 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
 
             let html = '';
             storedEvents.forEach(ev => {
-                    const isCarousel = ev.media_type === 'carousel';
-                    const plat = ev.target_platform || 'instagram';
-                    let platBadge = '<span class="badge" style="background: var(--insta-grad);">INSTAGRAM</span>';
-                    if (plat === 'facebook') platBadge = '<span class="badge bg-primary">FACEBOOK</span>';
+                const isCarousel = ev.media_type === 'carousel';
+                const plat = ev.target_platform || 'instagram';
+                let platBadge = '<span class="badge" style="background: var(--insta-grad); font-size: 0.65rem;">INSTAGRAM</span>';
+                if (plat === 'facebook') platBadge = '<span class="badge bg-primary" style="font-size: 0.65rem;">FACEBOOK</span>';
 
-                    let typeBadge = isCarousel ? '<span class="badge bg-warning text-dark"><i class="fa-solid fa-images me-1"></i>Album</span>' : '<span class="badge bg-secondary">Single</span>';
+                let typeBadge = isCarousel ? '<span class="badge bg-warning text-dark" style="font-size: 0.65rem;"><i class="fa-solid fa-images me-1"></i>Album</span>' : '<span class="badge bg-secondary" style="font-size: 0.65rem;">Single</span>';
 
-                    // Formatting exact schedule
-                    const dtInfo = ev.dt_info || { exact_date: ev.scheduled_time || 'Queue', exact_time: '', waqt: '', countdown: ev.scheduled_countdown || 'Scheduled' };
+                // Formatting exact schedule
+                const dtInfo = ev.dt_info || { exact_date: ev.scheduled_time || 'Queue', exact_time: '', waqt: '', countdown: ev.scheduled_countdown || 'Scheduled' };
 
-                    // Status Badge & Action Button
-                    let statusBadge = '';
-                    let actionBtn = '';
-                    if (ev.status === 'UPLOADED') {
-                        statusBadge = '<span class="badge bg-success text-white fw-bold px-2 py-1"><i class="fa-solid fa-circle-check me-1"></i> POSTED LIVE</span>';
-                        actionBtn = `<button class="btn btn-sm btn-outline-success rounded-pill flex-grow-1 fw-bold disabled"><i class="fa-solid fa-check-double me-1"></i> Posted Live on ${plat.toUpperCase()}</button>`;
-                    } else if (ev.status === 'UPLOADING') {
-                        statusBadge = '<span class="badge bg-warning text-dark fw-bold px-2 py-1"><i class="fa-solid fa-spinner fa-spin me-1"></i> Uploading...</span>';
-                        actionBtn = `<button class="btn btn-sm btn-warning rounded-pill flex-grow-1 fw-bold disabled text-dark"><i class="fa-solid fa-spinner fa-spin me-1"></i> Publishing...</button>`;
-                    } else if (ev.status === 'FAILED') {
-                        statusBadge = `<span class="badge bg-danger text-white fw-bold px-2 py-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> Failed</span>`;
-                        actionBtn = `<button class="btn btn-sm btn-danger rounded-pill flex-grow-1 fw-bold" onclick="forcePost(${ev.id})"><i class="fa-solid fa-rotate me-1"></i> Retry Now</button>`;
-                    } else {
-                        statusBadge = `<span class="badge bg-info text-dark fw-bold px-2 py-1"><i class="fa-solid fa-clock me-1"></i> ${dtInfo.countdown}</span>`;
-                        actionBtn = `<button class="btn btn-sm btn-primary rounded-pill flex-grow-1 fw-bold" onclick="forcePost(${ev.id})"><i class="fa-solid fa-bolt me-1"></i> Post Right Now</button>`;
-                    }
-                    let errorHtml = ev.error_message ? `<div class="small text-danger fw-bold mt-1 text-truncate" title="${ev.error_message}"><i class="fa-solid fa-circle-exclamation me-1"></i>${ev.error_message}</div>` : '';
+                // Status Badge & Action Button
+                let statusBadge = '';
+                let actionBtn = '';
+                if (ev.status === 'UPLOADED') {
+                    statusBadge = '<span class="badge bg-success text-white fw-bold px-2 py-1" style="font-size: 0.65rem;"><i class="fa-solid fa-circle-check me-1"></i> LIVE</span>';
+                    actionBtn = `<button class="btn btn-sm btn-outline-success rounded-pill flex-grow-1 fw-bold disabled py-1" style="font-size: 0.72rem;"><i class="fa-solid fa-check-double me-1"></i> Live on ${plat.toUpperCase()}</button>`;
+                } else if (ev.status === 'UPLOADING') {
+                    statusBadge = '<span class="badge bg-warning text-dark fw-bold px-2 py-1" style="font-size: 0.65rem;"><i class="fa-solid fa-spinner fa-spin me-1"></i> Publishing...</span>';
+                    actionBtn = `<button class="btn btn-sm btn-warning rounded-pill flex-grow-1 fw-bold disabled text-dark py-1" style="font-size: 0.72rem;"><i class="fa-solid fa-spinner fa-spin me-1"></i> Publishing...</button>`;
+                } else if (ev.status === 'FAILED') {
+                    statusBadge = '<span class="badge bg-danger text-white fw-bold px-2 py-1" style="font-size: 0.65rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i> Failed</span>';
+                    actionBtn = `<button class="btn btn-sm btn-danger rounded-pill flex-grow-1 fw-bold py-1" style="font-size: 0.72rem;" onclick="forcePost(${ev.id})"><i class="fa-solid fa-rotate me-1"></i> Retry Now</button>`;
+                } else {
+                    statusBadge = `<span class="badge bg-info text-dark fw-bold px-2 py-1" style="font-size: 0.65rem;"><i class="fa-solid fa-clock me-1"></i> ${dtInfo.countdown}</span>`;
+                    actionBtn = `<button class="btn btn-sm btn-primary rounded-pill flex-grow-1 fw-bold py-1" style="font-size: 0.72rem;" onclick="forcePost(${ev.id})"><i class="fa-solid fa-bolt me-1"></i> Post Now</button>`;
+                }
+                let errorHtml = ev.error_message ? `<div class="small text-danger fw-bold mt-1 text-truncate" style="font-size: 0.7rem;" title="${ev.error_message.replace(/"/g, '&quot;')}"><i class="fa-solid fa-circle-exclamation me-1"></i>${ev.error_message}</div>` : '';
 
-                    // Cover thumbnail
-                    let previewFile = '';
-                    if (ev.processed_path) {
-                        previewFile = ev.processed_path.split(/[\\\\/]/).pop();
-                    } else if (ev.file_path) {
-                        if (ev.file_path.trim().startsWith('[')) {
-                            try {
-                                const arr = JSON.parse(ev.file_path);
-                                previewFile = (arr[0] || '').split(/[\\\\/]/).pop();
-                            } catch (e) {}
-                        } else {
-                            previewFile = ev.file_path.split(/[\\\\/]/).pop();
-                        }
-                    }
-                    const thumbUrl = previewFile ? `/api/media/${previewFile}` : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200';
+                // Cover thumbnail
+                const thumbUrl = getCoverMediaUrl(ev);
 
-                    html += `
-                        <div class="col-md-6 col-lg-4">
-                            <div class="p-3 bg-dark bg-opacity-75 rounded-3 border border-secondary d-flex flex-column justify-content-between h-100">
-                                <div>
-                                    <!-- Badges & Status -->
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <div class="d-flex gap-1">${platBadge} ${typeBadge}</div>
-                                        ${statusBadge}
-                                    </div>
+                html += `
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                        <div class="p-2 bg-dark bg-opacity-75 rounded-3 border border-secondary d-flex flex-column justify-content-between h-100" style="min-height: 160px;">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="d-flex gap-1">${platBadge} ${typeBadge}</div>
+                                    ${statusBadge}
+                                </div>
 
-                                    <!-- Media & Exact Time Box -->
-                                    <div class="d-flex gap-3 align-items-center mb-2 p-2 bg-dark rounded-3 border border-secondary border-opacity-50">
-                                        <img src="${thumbUrl}" style="width: 55px; height: 55px; border-radius: 8px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200'">
-                                        <div>
-                                            <div class="fw-bold text-warning small"><i class="fa-solid fa-calendar-day me-1"></i>${dtInfo.exact_date}</div>
-                                            <div class="fw-bold text-white fs-6"><i class="fa-solid fa-clock me-1 text-info"></i>${dtInfo.exact_time}</div>
-                                            <div class="badge bg-secondary text-white-50" style="font-size: 0.68rem;">${dtInfo.waqt}</div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Caption Snippet -->
-                                    <div class="small text-white-50 text-truncate mb-1" style="max-height: 40px; overflow: hidden;">
-                                        ${ev.caption || 'No caption'}
+                                <div class="d-flex gap-2 align-items-center mb-2 p-2 bg-dark rounded-3 border border-secondary border-opacity-50">
+                                    <img src="${thumbUrl}" style="width: 48px; height: 48px; border-radius: 6px; object-fit: cover; flex-shrink: 0;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'48\' height=\'48\' viewBox=\'0 0 48 48\'><rect width=\'100%\' height=\'100%\' fill=\'%23111827\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%236b7280\' font-family=\'sans-serif\' font-size=\'10\'>IMG</text></svg>';">
+                                    <div style="line-height: 1.25; overflow: hidden;">
+                                        <div class="fw-bold text-warning" style="font-size: 0.72rem;"><i class="fa-solid fa-calendar-day me-1"></i>${dtInfo.exact_date}</div>
+                                        <div class="fw-bold text-white" style="font-size: 0.82rem;"><i class="fa-solid fa-clock me-1 text-info"></i>${dtInfo.exact_time}</div>
+                                        <div class="badge bg-secondary text-white-50" style="font-size: 0.62rem;">${dtInfo.waqt}</div>
                                     </div>
                                 </div>
 
-                                ${errorHtml}
-                                <div class="d-flex gap-2 mt-3 pt-2 border-top border-secondary">
-                                    ${actionBtn}
-                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="deletePost(${ev.id})">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </button>
+                                <div class="text-white-50 text-truncate mb-1" style="font-size: 0.73rem;" title="${(ev.caption || '').replace(/"/g, '&quot;')}">
+                                    ${ev.caption || 'No caption'}
                                 </div>
                             </div>
+
+                            ${errorHtml}
+                            <div class="d-flex gap-1 mt-2 pt-2 border-top border-secondary border-opacity-50">
+                                ${actionBtn}
+                                <button class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" style="font-size: 0.72rem;" onclick="deletePost(${ev.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                            </div>
                         </div>
-                    `;
-                });
-                container.innerHTML = html;
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
         }
 
         // --- REELS FEED & STATUS ---
         async function loadReelsFeed() {
             try {
                 const res = await fetch('/api/posts');
-                allPostsData = await res.json();
+                const data = await res.json();
+                let deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
+                allPostsData = (Array.isArray(data) ? data : []).filter(p => !deletedIds.has(p.id));
                 renderPosts();
             } catch (e) {}
         }
@@ -1265,9 +1266,11 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
 
         function renderPosts() {
             const container = document.getElementById('reels-feed-grid');
-            let filtered = allPostsData;
+            let deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
+            let filtered = (allPostsData || []).filter(p => !deletedIds.has(p.id));
+
             if (currentFeedFilter !== 'all') {
-                filtered = allPostsData.filter(p => p.target_platform === currentFeedFilter);
+                filtered = filtered.filter(p => p.target_platform === currentFeedFilter);
             }
 
             if (!filtered || filtered.length === 0) {
@@ -1284,64 +1287,50 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             let html = '';
             filtered.forEach(p => {
                 const plat = p.target_platform || 'instagram';
-                let platBadge = '<span class="badge" style="background: var(--insta-grad);">INSTAGRAM</span>';
-                if (plat === 'facebook') platBadge = '<span class="badge bg-primary">FACEBOOK</span>';
+                let platBadge = '<span class="badge" style="background: var(--insta-grad); font-size: 0.65rem;">INSTAGRAM</span>';
+                if (plat === 'facebook') platBadge = '<span class="badge bg-primary" style="font-size: 0.65rem;">FACEBOOK</span>';
 
                 const isCarousel = p.media_type === 'carousel';
                 const isImage = p.media_type === 'image';
-                let typeBadge = '<span class="badge bg-secondary"><i class="fa-solid fa-video me-1"></i>Reel</span>';
-                if (isCarousel) typeBadge = '<span class="badge bg-warning text-dark"><i class="fa-solid fa-images me-1"></i>Album</span>';
-                if (isImage) typeBadge = '<span class="badge bg-info text-dark"><i class="fa-solid fa-image me-1"></i>Photo</span>';
+                let typeBadge = '<span class="badge bg-secondary" style="font-size: 0.65rem;"><i class="fa-solid fa-video me-1"></i>Reel</span>';
+                if (isCarousel) typeBadge = '<span class="badge bg-warning text-dark" style="font-size: 0.65rem;"><i class="fa-solid fa-images me-1"></i>Album</span>';
+                if (isImage) typeBadge = '<span class="badge bg-info text-dark" style="font-size: 0.65rem;"><i class="fa-solid fa-image me-1"></i>Photo</span>';
 
-                let statusBadge = '<span class="badge bg-warning text-dark fw-bold">Processing...</span>';
+                let statusBadge = '<span class="badge bg-warning text-dark fw-bold" style="font-size: 0.65rem;">Processing...</span>';
                 if (p.status === 'SCHEDULED') {
-                    statusBadge = `<span class="badge bg-primary text-white fw-bold"><i class="fa-solid fa-clock me-1"></i> ${p.scheduled_countdown || 'Ready'}</span>`;
+                    statusBadge = `<span class="badge bg-primary text-white fw-bold" style="font-size: 0.65rem;"><i class="fa-solid fa-clock me-1"></i> ${p.scheduled_countdown || 'Ready'}</span>`;
                 } else if (p.status === 'UPLOADED') {
-                    statusBadge = `<span class="badge bg-success text-white fw-bold"><i class="fa-solid fa-check me-1"></i> Live</span>`;
+                    statusBadge = `<span class="badge bg-success text-white fw-bold" style="font-size: 0.65rem;"><i class="fa-solid fa-check me-1"></i> Live</span>`;
                 } else if (p.status === 'FAILED') {
-                    statusBadge = `<span class="badge bg-danger text-white fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i> Failed</span>`;
+                    statusBadge = `<span class="badge bg-danger text-white fw-bold" style="font-size: 0.65rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i> Failed</span>`;
                 }
 
-                let previewFile = '';
-                if (p.processed_path) {
-                    previewFile = p.processed_path.split(/[\\\\/]/).pop();
-                } else if (p.file_path) {
-                    if (p.file_path.trim().startsWith('[')) {
-                        try {
-                            const arr = JSON.parse(p.file_path);
-                            previewFile = (arr[0] || '').split(/[\\\\/]/).pop();
-                        } catch (e) {}
-                    } else {
-                        previewFile = p.file_path.split(/[\\\\/]/).pop();
-                    }
-                }
-
-                const thumbUrl = previewFile ? `/api/media/${previewFile}` : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500';
+                const thumbUrl = getCoverMediaUrl(p);
 
                 html += `
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-6 col-md-4 col-lg-3 col-xl-2">
                         <div class="reel-card">
-                            <div class="reel-thumb-container" onclick="previewMediaItem('${previewFile}')">
-                                <img src="${thumbUrl}" class="reel-thumb-img" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500'">
-                                <div class="reel-play-btn"><i class="fa-solid fa-${p.media_type === 'video' ? 'play' : 'eye'} ms-1"></i></div>
-                                <div style="position: absolute; top: 12px; left: 12px; display: flex; gap: 4px;">${platBadge} ${typeBadge}</div>
-                                <div style="position: absolute; bottom: 12px; left: 12px;">${statusBadge}</div>
+                            <div class="reel-thumb-container" onclick="previewMediaItem('${thumbUrl}')">
+                                <img src="${thumbUrl}" class="reel-thumb-img" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'200\' viewBox=\'0 0 300 200\'><rect width=\'100%\' height=\'100%\' fill=\'%23111827\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%236b7280\' font-family=\'sans-serif\' font-size=\'13\'>Crown Kredence</text></svg>';">
+                                <div class="reel-play-btn"><i class="fa-solid fa-${p.media_type === 'video' ? 'play' : 'eye'}"></i></div>
+                                <div style="position: absolute; top: 6px; left: 6px; display: flex; gap: 3px;">${platBadge} ${typeBadge}</div>
+                                <div style="position: absolute; bottom: 6px; left: 6px;">${statusBadge}</div>
                             </div>
-                            <div class="p-3 d-flex flex-column justify-content-between flex-grow-1">
+                            <div class="p-2 d-flex flex-column justify-content-between flex-grow-1" style="font-size: 0.8rem;">
                                 <div>
-                                    <div class="text-white fw-bold small mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                                        ${p.caption || 'Product post'}
+                                    <div class="text-white fw-bold mb-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.78rem; line-height: 1.25;" title="${(p.caption || '').replace(/"/g, '&quot;')}">
+                                        ${p.caption || 'Crown Kredence by JANI'S'}
                                     </div>
-                                    <div class="text-info small fw-semibold text-truncate mb-3">${p.hashtags || '#viral'}</div>
-                                    ${p.status === 'FAILED' && p.error_message ? `<div class="alert alert-danger p-2 small mb-2 text-truncate" style="font-size:0.75rem;">${p.error_message}</div>` : ''}
+                                    <div class="text-info fw-semibold text-truncate mb-2" style="font-size: 0.7rem;">${p.hashtags || '#JANIsPerfume'}</div>
+                                    ${p.status === 'FAILED' && p.error_message ? `<div class="alert alert-danger p-1 mb-1 text-truncate" style="font-size:0.68rem;" title="${p.error_message.replace(/"/g, '&quot;')}">${p.error_message}</div>` : ''}
                                 </div>
-                                <div class="d-flex gap-2 pt-2 border-top border-secondary">
+                                <div class="d-flex gap-1 pt-1 border-top border-secondary border-opacity-50">
                                     ${(p.status === 'SCHEDULED' || p.status === 'QUEUED') ? 
-                                        `<button class="btn btn-sm btn-success rounded-pill flex-grow-1 fw-bold" onclick="forcePost(${p.id})"><i class="fa-solid fa-bolt me-1"></i> Post Now</button>` : 
-                                        (p.remote_url ? `<a href="${p.remote_url}" target="_blank" class="btn btn-sm btn-outline-info rounded-pill flex-grow-1 fw-bold"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i> View Live</a>` : '')
+                                        `<button class="btn btn-sm btn-success rounded-pill flex-grow-1 fw-bold py-1 px-1" style="font-size: 0.7rem;" onclick="forcePost(${p.id})"><i class="fa-solid fa-bolt me-1"></i>Post</button>` : 
+                                        (p.remote_url ? `<a href="${p.remote_url}" target="_blank" class="btn btn-sm btn-outline-info rounded-pill flex-grow-1 fw-bold py-1 px-1" style="font-size: 0.7rem;"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Live</a>` : '')
                                     }
-                                    <button class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="previewMediaItem('${previewFile}')"><i class="fa-solid fa-eye"></i></button>
-                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="deletePost(${p.id})"><i class="fa-solid fa-trash"></i></button>
+                                    <button class="btn btn-sm btn-outline-light rounded-pill px-2 py-1" style="font-size: 0.7rem;" onclick="previewMediaItem('${thumbUrl}')" title="Preview"><i class="fa-solid fa-eye"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" style="font-size: 0.7rem;" onclick="deletePost(${p.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -1351,24 +1340,30 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             container.innerHTML = html;
         }
 
-        function previewMediaItem(filename) {
-            if (!filename) return;
+        function previewMediaItem(mediaSrc) {
+            if (!mediaSrc) return;
             const videoElem = document.getElementById('preview-video-element');
             const imgElem = document.getElementById('preview-image-element');
 
-            const isVideo = ['.mp4', '.mov', '.webm'].some(ext => filename.toLowerCase().endsWith(ext));
-            const mediaUrl = `/api/media/${filename}`;
+            let fullUrl = String(mediaSrc).trim();
+            if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://') && !fullUrl.startsWith('/api/')) {
+                const fname = fullUrl.split(/[\\/]/).pop();
+                fullUrl = `/api/media/${encodeURIComponent(fname)}`;
+            }
+
+            const isVideo = ['.mp4', '.mov', '.webm', '.avi'].some(ext => fullUrl.toLowerCase().includes(ext));
 
             if (isVideo) {
                 imgElem.style.display = 'none';
                 videoElem.style.display = 'block';
-                videoElem.src = mediaUrl;
+                videoElem.src = fullUrl;
                 videoElem.play().catch(e => {});
             } else {
                 videoElem.pause();
                 videoElem.style.display = 'none';
+                videoElem.src = '';
                 imgElem.style.display = 'block';
-                imgElem.src = mediaUrl;
+                imgElem.src = fullUrl;
             }
             videoModal.show();
         }
@@ -1381,11 +1376,20 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
             }
         }
 
-        function clearFailedEvents() {
-            let cur = getStoredEvents().filter(e => e.status !== 'FAILED');
-            setStoredEvents(cur);
+        async function clearFailedEvents() {
+            let deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
+            let stored = getStoredEvents();
+            let failed = stored.filter(e => e.status === 'FAILED');
+            failed.forEach(e => {
+                deletedIds.add(e.id);
+                fetch(`/api/posts/${e.id}/delete`, { method: 'POST' }).catch(() => {});
+            });
+            localStorage.setItem('reelpilot_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+            setStoredEvents(stored.filter(e => e.status !== 'FAILED'));
+            allPostsData = allPostsData.filter(p => p.status !== 'FAILED');
+            renderPosts();
             loadCalendarFeed();
-            showToast("Old failed posts cleared from timeline!");
+            showToast("Old failed posts cleared permanently!");
         }
 
         async function forcePost(id) {
@@ -1394,7 +1398,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                 const res = await fetch(`/api/posts/${id}/post-now`, { method: 'POST' });
                 const d = await res.json();
                 if (d.success) {
-                    showToast("Upload triggered!");
+                    showToast("Upload triggered successfully!");
                     loadReelsFeed();
                     loadCalendarFeed();
                 } else {
@@ -1406,15 +1410,26 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
         }
 
         async function deletePost(id) {
-            if (!confirm("Are you sure you want to delete this post?")) return;
+            if (!confirm("Are you sure you want to delete this post permanently?")) return;
             try {
+                // Instantly blacklist the ID so it never resurfaces in any polling cycle
+                let deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
+                deletedIds.add(id);
+                localStorage.setItem('reelpilot_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+
+                // Instantly remove from local storedEvents and in-memory feed
                 let cur = getStoredEvents().filter(e => e.id !== id);
                 setStoredEvents(cur);
-                await fetch(`/api/posts/${id}/delete`, { method: 'POST' });
-                showToast("Post deleted");
-                loadReelsFeed();
+                allPostsData = allPostsData.filter(p => p.id !== id);
+                renderPosts();
                 loadCalendarFeed();
-            } catch (e) {}
+
+                // Fire server delete call
+                await fetch(`/api/posts/${id}/delete`, { method: 'POST' });
+                showToast("Post deleted permanently!");
+            } catch (e) {
+                showToast("Delete error: " + e, "error");
+            }
         }
 
         async function openFolder(f) {

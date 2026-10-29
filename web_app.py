@@ -148,6 +148,22 @@ def api_scheduler_mode():
     config_manager.update(posting_mode=mode)
     return jsonify({"success": True, "mode": mode})
 
+def extract_cover_url(p):
+    path = getattr(p, "processed_path", None) or getattr(p, "file_path", None) or ""
+    if path.startswith("["):
+        try:
+            arr = json.loads(path)
+            if isinstance(arr, list) and len(arr) > 0:
+                path = arr[0]
+        except Exception:
+            pass
+    if not path:
+        return ""
+    if path.startswith("http://") or path.startswith("https://"):
+        return path
+    fname = os.path.basename(path)
+    return f"/api/media/{fname}"
+
 @app.route("/api/posts")
 def api_posts():
     current_db = get_db()
@@ -161,6 +177,7 @@ def api_posts():
             d["scheduled_countdown"] = f"Uploaded ({p.uploaded_at.split('T')[0]})"
         else:
             d["scheduled_countdown"] = "Ready"
+        d["cover_url"] = extract_cover_url(p)
         result.append(d)
     return jsonify(result)
 
@@ -225,6 +242,7 @@ def api_calendar():
             d = p.__dict__.copy()
             d["dt_info"] = format_post_datetime(p.scheduled_time or p.created_at)
             d["scheduled_countdown"] = d["dt_info"]["countdown"]
+            d["cover_url"] = extract_cover_url(p)
             calendar_events.append(d)
 
     calendar_events.sort(key=lambda x: str(x.get("scheduled_time") or x.get("created_at") or ""), reverse=True)
@@ -438,11 +456,21 @@ def api_open_folder():
 @app.route("/api/media/<path:filename>")
 def api_media(filename):
     search_dirs = [
+        os.path.join(ROOT_DIR, "studio_uploads"),
+        os.path.join(ROOT_DIR, "assets"),
+        os.path.join(ROOT_DIR, "output"),
+        os.path.join(ROOT_DIR, "watch_folders", "Ready_for_Instagram"),
+        os.path.join(ROOT_DIR, "watch_folders", "Ready_for_Insta"),
+        os.path.join(ROOT_DIR, "watch_folders", "Ready_for_Facebook"),
+        os.path.join(ROOT_DIR, "watch_folders", "Ready_for_TikTok"),
+        os.path.join(ROOT_DIR, "watch_folders_archive"),
+        ROOT_DIR,
         config_manager.config.processed_folder,
         config_manager.config.watch_folder_insta,
         config_manager.config.watch_folder_facebook,
         config_manager.config.watch_folder_tiktok,
         config_manager.config.audio_library_folder,
+        "/tmp/studio_uploads",
         "/tmp/processed_media",
         "/tmp/watch_folders/instagram",
         "/tmp/watch_folders/facebook",
@@ -477,7 +505,26 @@ def api_post_now(post_id):
 @app.route("/api/posts/<int:post_id>/delete", methods=["POST"])
 def api_delete_post(post_id):
     current_db = get_db()
-    success = current_db.delete_post(post_id) if current_db else False
+    if not current_db:
+        return jsonify({"success": False}), 500
+    post = current_db.get_post(post_id)
+    if post:
+        try:
+            f_path = post.processed_path or post.file_path
+            if f_path and not f_path.startswith("http") and not f_path.startswith("["):
+                if os.path.exists(f_path):
+                    os.remove(f_path)
+            elif f_path and f_path.startswith("["):
+                import json
+                try:
+                    for sub_f in json.loads(f_path):
+                        if sub_f and not sub_f.startswith("http") and os.path.exists(sub_f):
+                            os.remove(sub_f)
+                except Exception:
+                    pass
+        except Exception as fe:
+            logger.warning(f"Error cleaning local file for #{post_id}: {fe}")
+    success = current_db.delete_post(post_id)
     return jsonify({"success": success})
 
 @app.route("/api/calendar/restore", methods=["POST"])
