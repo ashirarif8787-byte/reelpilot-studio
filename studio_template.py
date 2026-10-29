@@ -743,6 +743,26 @@ STUDIO_HTML = """<!DOCTYPE html>
     </div>
 
     <!-- TOAST NOTIFICATION CONTAINER -->
+    
+    <!-- NON-BLOCKING LUXURY ACTION CONFIRMATION MODAL -->
+    <div class="modal fade" id="modalConfirmAction" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content bg-dark text-white border border-secondary rounded-4 shadow-lg text-center p-3">
+                <div class="modal-body p-2">
+                    <div class="p-3 rounded-circle bg-danger bg-opacity-10 text-danger fs-3 d-inline-block mb-2">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </div>
+                    <h6 class="fw-bold text-white mb-1" id="confirmModalTitle">Are you sure?</h6>
+                    <p class="small text-white-50 mb-3" id="confirmModalText" style="font-size: 0.78rem;">This action will permanently delete this item.</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold" id="confirmModalBtn">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="toast-container"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1205,54 +1225,84 @@ STUDIO_HTML = """<!DOCTYPE html>
             }
         }
 
-        // --- INSTANT PERMANENT DELETE POST ---
-        async function deletePost(id) {
-            if (!confirm("Are you sure you want to permanently delete this post?")) return;
+        // --- NON-BLOCKING CONFIRMATION SYSTEM (ELIMINATES CHROME INP WARNINGS) ---
+        let pendingConfirmAction = null;
+        let confirmActionModal = null;
 
-            // 1. Instantly blacklist ID so it never resurfaces
-            const deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
-            deletedIds.add(String(id));
-            deletedIds.add(Number(id));
-            localStorage.setItem('reelpilot_deleted_ids', JSON.stringify(Array.from(deletedIds)));
-
-            // 2. Instantly remove from DOM
-            const el1 = document.getElementById(`timeline-post-${id}`);
-            if (el1) el1.remove();
-            const el2 = document.getElementById(`feed-post-${id}`);
-            if (el2) el2.remove();
-
-            // 3. Remove from memory
-            allPostsData = allPostsData.filter(p => String(p.id) !== String(id));
-
-            try {
-                await fetch(`/api/posts/${id}/delete`, { method: 'POST' });
-                showToast("Post deleted permanently!");
-            } catch (e) {
-                console.warn(e);
+        function promptActionConfirm(title, text, actionFn) {
+            if (!confirmActionModal) {
+                confirmActionModal = new bootstrap.Modal(document.getElementById('modalConfirmAction'));
+                document.getElementById('confirmModalBtn').addEventListener('click', () => {
+                    confirmActionModal.hide();
+                    if (pendingConfirmAction) {
+                        const fn = pendingConfirmAction;
+                        pendingConfirmAction = null;
+                        fn();
+                    }
+                });
             }
+            document.getElementById('confirmModalTitle').innerText = title;
+            document.getElementById('confirmModalText').innerText = text;
+            pendingConfirmAction = actionFn;
+            confirmActionModal.show();
+        }
+
+        // --- INSTANT PERMANENT DELETE POST ---
+        function deletePost(id) {
+            promptActionConfirm(
+                "Delete Post Permanently?",
+                "This post will be completely removed from your calendar and cloud queue.",
+                async () => {
+                    // 1. Instantly blacklist ID so it never resurfaces
+                    const deletedIds = new Set(JSON.parse(localStorage.getItem('reelpilot_deleted_ids') || '[]'));
+                    deletedIds.add(String(id));
+                    deletedIds.add(Number(id));
+                    localStorage.setItem('reelpilot_deleted_ids', JSON.stringify(Array.from(deletedIds)));
+
+                    // 2. Instantly remove from DOM
+                    const el1 = document.getElementById(`timeline-post-${id}`);
+                    if (el1) el1.remove();
+                    const el2 = document.getElementById(`feed-post-${id}`);
+                    if (el2) el2.remove();
+
+                    // 3. Remove from memory
+                    allPostsData = allPostsData.filter(p => String(p.id) !== String(id));
+
+                    try {
+                        await fetch(`/api/posts/${id}/delete`, { method: 'POST' });
+                        showToast("Post deleted permanently!");
+                    } catch (e) {
+                        console.warn(e);
+                    }
+                }
+            );
         }
 
         // --- CLEAR ALL FAILED POSTS ---
-        async function clearFailedEvents() {
-            if (!confirm("Are you sure you want to clear all failed test posts permanently?")) return;
+        function clearFailedEvents() {
+            promptActionConfirm(
+                "Clear Failed Posts?",
+                "All failed test posts will be wiped from your calendar and cloud queue.",
+                async () => {
+                    // Instantly clear failed elements from DOM
+                    document.querySelectorAll('[id^="timeline-post-"]').forEach(el => {
+                        if (el.innerText.includes('Failed')) el.remove();
+                    });
+                    document.querySelectorAll('[id^="feed-post-"]').forEach(el => {
+                        if (el.innerText.includes('Failed')) el.remove();
+                    });
 
-            // Instantly clear failed elements from DOM
-            document.querySelectorAll('[id^="timeline-post-"]').forEach(el => {
-                if (el.innerText.includes('Failed')) el.remove();
-            });
-            document.querySelectorAll('[id^="feed-post-"]').forEach(el => {
-                if (el.innerText.includes('Failed')) el.remove();
-            });
-
-            try {
-                const res = await fetch('/api/posts/clear-failed', { method: 'POST' });
-                const data = await res.json();
-                showToast(`Cleared ${data.removed || 0} failed posts!`);
-                await loadCalendarFeed();
-                await loadReelsFeed();
-            } catch (e) {
-                showToast("Clear error: " + e, "error");
-            }
+                    try {
+                        const res = await fetch('/api/posts/clear-failed', { method: 'POST' });
+                        const data = await res.json();
+                        showToast(`Cleared ${data.removed || 0} failed posts!`);
+                        await loadCalendarFeed();
+                        await loadReelsFeed();
+                    } catch (e) {
+                        showToast("Clear error: " + e, "error");
+                    }
+                }
+            );
         }
 
         // --- POST NOW / RETRY ---
