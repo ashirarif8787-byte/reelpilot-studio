@@ -1539,7 +1539,13 @@ STUDIO_HTML = """<!DOCTYPE html>
             settingsModal.show();
         }
 
-        async ;
+        async function saveStudioSettings() {
+            const payload = {
+                brand_name: document.getElementById('setting-brand-name').value.trim(),
+                meta_access_token: document.getElementById('setting-meta-token').value.trim(),
+                daily_limit_insta: parseInt(document.getElementById('setting-quota-ig').value, 10) || 3,
+                daily_limit_facebook: parseInt(document.getElementById('setting-quota-fb').value, 10) || 3
+            };
             try {
                 const res = await fetch('/api/settings', {
                     method: 'POST',
