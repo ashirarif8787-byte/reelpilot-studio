@@ -1349,7 +1349,7 @@ HTML_STUDIO_V36 = """<!DOCTYPE html>
                             <div class="p-2 d-flex flex-column justify-content-between flex-grow-1" style="font-size: 0.8rem;">
                                 <div>
                                     <div class="text-white fw-bold mb-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.78rem; line-height: 1.25;" title="${(p.caption || '').replace(/"/g, '&quot;')}">
-                                        ${p.caption || 'Crown Kredence by JANI'S'}
+                                        ${p.caption || "Crown Kredence by JANI'S"}
                                     </div>
                                     <div class="text-info fw-semibold text-truncate mb-2" style="font-size: 0.7rem;">${p.hashtags || '#JANIsPerfume'}</div>
                                     ${p.status === 'FAILED' && p.error_message ? `<div class="alert alert-danger p-1 mb-1 text-truncate" style="font-size:0.68rem;" title="${p.error_message.replace(/"/g, '&quot;')}">${p.error_message}</div>` : ''}

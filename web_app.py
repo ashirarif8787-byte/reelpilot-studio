@@ -301,58 +301,60 @@ def api_ai_analyze_media():
 
 @app.route("/api/accounts/health")
 def api_accounts_health():
+    from app.config import PERMANENT_META_TOKEN
     cfg = config_manager.config
-    token = request.headers.get("X-Meta-Token") or (cfg.meta_access_token or "").strip()
-    if not token:
-        from app.config import PERMANENT_META_TOKEN
-        token = PERMANENT_META_TOKEN
-        cfg.meta_access_token = token
 
-    try:
-        url = f"https://graph.facebook.com/v19.0/me?access_token={token}&fields=id,name"
-        r = requests.get(url, timeout=6)
-        data = r.json()
-        if "error" in data:
-            err = data["error"]
-            err_msg = err.get("message", "Token validation failed")
-            code = err.get("code")
-            subcode = err.get("error_subcode", 0)
-            is_expired = (code == 190 or subcode == 463)
-            return jsonify({
-                "connected": False,
-                "status": "EXPIRED" if is_expired else "ERROR",
-                "message": f"Meta Session Expired: {err_msg}" if is_expired else f"Meta Error: {err_msg}",
-                "error_code": code,
-                "subcode": subcode,
-                "facebook": {"connected": False, "name": cfg.brand_name, "id": cfg.facebook_page_id},
-                "instagram": {"connected": False, "username": "official_janisperfume", "id": cfg.instagram_account_id}
-            })
+    candidate_tokens = []
+    header_token = request.headers.get("X-Meta-Token", "").strip()
+    if header_token:
+        candidate_tokens.append(header_token)
+    if cfg.meta_access_token and cfg.meta_access_token.strip():
+        candidate_tokens.append(cfg.meta_access_token.strip())
+    if PERMANENT_META_TOKEN and PERMANENT_META_TOKEN.strip():
+        candidate_tokens.append(PERMANENT_META_TOKEN.strip())
 
-        user_name = data.get("name", "User")
-        return jsonify({
-            "connected": True,
-            "status": "ACTIVE",
-            "user_name": user_name,
-            "message": f"Connected & Verified Live with Meta ({user_name})!",
-            "facebook": {
-                "connected": bool(cfg.facebook_page_id),
-                "name": cfg.brand_name or "JANI\'s Perfume",
-                "id": cfg.facebook_page_id or "800869286434757"
-            },
-            "instagram": {
-                "connected": bool(cfg.instagram_account_id),
-                "username": "official_janisperfume",
-                "id": cfg.instagram_account_id or "17841423338066933"
-            }
-        })
-    except Exception as e:
-        return jsonify({
-            "connected": False,
-            "status": "NETWORK_ERROR",
-            "message": f"Network check error: {e}",
-            "facebook": {"connected": False, "name": cfg.brand_name, "id": cfg.facebook_page_id},
-            "instagram": {"connected": False, "username": "official_janisperfume", "id": cfg.instagram_account_id}
-        })
+    last_err_data = None
+    for token in candidate_tokens:
+        try:
+            url = f"https://graph.facebook.com/v19.0/me?access_token={token}&fields=id,name"
+            r = requests.get(url, timeout=6)
+            data = r.json()
+            if "error" not in data:
+                user_name = data.get("name", "User")
+                return jsonify({
+                    "connected": True,
+                    "status": "ACTIVE",
+                    "user_name": user_name,
+                    "message": f"Connected & Verified Live with Meta ({user_name})!",
+                    "facebook": {
+                        "connected": bool(cfg.facebook_page_id),
+                        "name": cfg.brand_name or "JANI's Perfume",
+                        "id": cfg.facebook_page_id or "800869286434757"
+                    },
+                    "instagram": {
+                        "connected": bool(cfg.instagram_account_id),
+                        "username": "official_janisperfume",
+                        "id": cfg.instagram_account_id or "17841423338066933"
+                    }
+                })
+            else:
+                last_err_data = data["error"]
+        except Exception as ex:
+            logger.warning(f"Error verifying candidate token: {ex}")
+
+    err_msg = last_err_data.get("message", "Token validation failed") if last_err_data else "No token configured"
+    code = last_err_data.get("code") if last_err_data else 0
+    subcode = last_err_data.get("error_subcode", 0) if last_err_data else 0
+    is_expired = (code == 190 or subcode == 463)
+    return jsonify({
+        "connected": False,
+        "status": "EXPIRED" if is_expired else "ERROR",
+        "message": f"Meta Session Expired: {err_msg}" if is_expired else f"Meta Error: {err_msg}",
+        "error_code": code,
+        "subcode": subcode,
+        "facebook": {"connected": False, "name": cfg.brand_name, "id": cfg.facebook_page_id},
+        "instagram": {"connected": False, "username": "official_janisperfume", "id": cfg.instagram_account_id}
+    })
 
 @app.route("/api/ai/generate-luxury-copy", methods=["POST"])
 def api_ai_generate_luxury_copy():
