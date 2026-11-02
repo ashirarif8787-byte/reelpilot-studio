@@ -102,19 +102,25 @@ class CloudQueueManager:
             pass
         return False
 
-    def add_scheduled_post(self, post_info: Dict[str, Any]) -> bool:
-        """Adds a new scheduled post item to cloud queue."""
+    def add_scheduled_posts(self, posts_list: List[Dict[str, Any]]) -> bool:
+        """Atomically adds or updates multiple scheduled posts in cloud queue in a single commit."""
+        if not posts_list:
+            return True
         q = self.fetch_queue()
         queue_data = q.get("data", {"scheduled": [], "history": []})
         scheduled = queue_data.get("scheduled", [])
 
-        # Ensure unique post_id
-        post_id = post_info.get("id")
-        scheduled = [p for p in scheduled if p.get("id") != post_id]
-        scheduled.append(post_info)
-        queue_data["scheduled"] = scheduled
+        # Map of new post ids
+        new_ids = {str(p.get("id")) for p in posts_list if p.get("id") is not None}
+        filtered_scheduled = [p for p in scheduled if str(p.get("id")) not in new_ids]
+        filtered_scheduled.extend(posts_list)
+        queue_data["scheduled"] = filtered_scheduled
 
         return self.save_queue(queue_data, sha=q.get("sha"))
+
+    def add_scheduled_post(self, post_info: Dict[str, Any]) -> bool:
+        """Adds a new scheduled post item to cloud queue."""
+        return self.add_scheduled_posts([post_info])
 
     def get_due_posts(self) -> List[Dict[str, Any]]:
         """Returns all posts that are SCHEDULED and whose scheduled_time <= now (UTC)."""
@@ -163,7 +169,7 @@ class CloudQueueManager:
         remaining_scheduled = []
 
         for p in scheduled:
-            if p.get("id") == post_id:
+            if str(p.get("id")) == str(post_id):
                 p["status"] = status
                 if remote_id: p["remote_media_id"] = remote_id
                 if remote_url: p["remote_url"] = remote_url
@@ -188,8 +194,8 @@ class CloudQueueManager:
         """Permanently removes a post from both scheduled queue and history."""
         q = self.fetch_queue()
         queue_data = q.get("data", {"scheduled": [], "history": []})
-        scheduled = [p for p in queue_data.get("scheduled", []) if p.get("id") != post_id]
-        history = [p for p in queue_data.get("history", []) if p.get("id") != post_id]
+        scheduled = [p for p in queue_data.get("scheduled", []) if str(p.get("id")) != str(post_id)]
+        history = [p for p in queue_data.get("history", []) if str(p.get("id")) != str(post_id)]
 
         queue_data["scheduled"] = scheduled
         queue_data["history"] = history

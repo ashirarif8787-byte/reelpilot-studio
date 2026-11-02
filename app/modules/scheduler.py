@@ -426,6 +426,18 @@ def execute_post_upload(post_id: int, db=None):
                         hashtags=item.get("hashtags", ""),
                         status=item.get("status", "SCHEDULED")
                     )
+                    if db and hasattr(db, 'insert_post_with_id'):
+                        try:
+                            db.insert_post_with_id(
+                                post_id=post.id,
+                                file_path=post.file_path,
+                                file_hash=f"restored_{post.id}",
+                                target_platform=post.target_platform,
+                                media_type=post.media_type,
+                                status=post.status
+                            )
+                        except Exception:
+                            pass
                     break
         except Exception as qe:
             logger.warning(f"Cloud queue lookup exception: {qe}")

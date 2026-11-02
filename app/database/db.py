@@ -119,6 +119,30 @@ class DatabaseManager:
         except sqlite3.IntegrityError:
             return None
 
+    def insert_post_with_id(
+        self,
+        post_id: int,
+        file_path: str,
+        file_hash: str,
+        target_platform: str,
+        media_type: str,
+        status: str = PostStatus.QUEUED.value
+    ) -> Optional[int]:
+        """Inserts a new post record with a pre-assigned unique integer ID."""
+        now = datetime.now().isoformat()
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO posts (id, file_path, file_hash, target_platform, media_type, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (post_id, file_path, file_hash, target_platform, media_type, status, now, now))
+                conn.commit()
+                self.log_event(post_id, target_platform, status, f"Queued file: {os.path.basename(file_path)}")
+                return post_id
+        except sqlite3.IntegrityError:
+            return self.insert_post(file_path, file_hash, target_platform, media_type, status)
+
     def update_post(self, post_id: int, **kwargs):
         """Updates fields of a post record dynamically."""
         if not kwargs:

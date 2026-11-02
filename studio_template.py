@@ -1273,10 +1273,10 @@ STUDIO_HTML = """<!DOCTYPE html>
                         actionBtn = `<button class="btn btn-sm btn-warning rounded-pill flex-grow-1 fw-bold disabled text-dark py-1" style="font-size: 0.72rem;"><i class="fa-solid fa-spinner fa-spin me-1"></i>Publishing</button>`;
                     } else if (ev.status === 'FAILED') {
                         statusBadge = '<span class="badge bg-danger text-white fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>Failed</span>';
-                        actionBtn = `<button class="btn btn-sm btn-danger rounded-pill flex-grow-1 fw-bold py-1" style="font-size: 0.72rem;" onclick="forcePost(${ev.id})"><i class="fa-solid fa-rotate me-1"></i>Retry Now</button>`;
+                        actionBtn = `<button class="btn btn-sm btn-danger rounded-pill flex-grow-1 fw-bold py-1" style="font-size: 0.72rem;" onclick="forcePost('${ev.id}')"><i class="fa-solid fa-rotate me-1"></i>Retry Now</button>`;
                     } else {
                         statusBadge = `<span class="badge bg-info text-dark fw-bold"><i class="fa-solid fa-clock me-1"></i>${dt.countdown}</span>`;
-                        actionBtn = `<button class="btn btn-sm btn-primary rounded-pill flex-grow-1 fw-bold py-1" style="font-size: 0.72rem;" onclick="forcePost(${ev.id})"><i class="fa-solid fa-bolt me-1"></i>Post Now</button>`;
+                        actionBtn = `<button class="btn btn-sm btn-primary rounded-pill flex-grow-1 fw-bold py-1" style="font-size: 0.72rem;" onclick="forcePost('${ev.id}')"><i class="fa-solid fa-bolt me-1"></i>Post Now</button>`;
                     }
 
                     const thumbUrl = getCoverMediaUrl(ev);
@@ -1292,7 +1292,7 @@ STUDIO_HTML = """<!DOCTYPE html>
                                     </div>
 
                                     <div class="d-flex gap-2 align-items-center p-2 rounded-3 mb-2" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05);">
-                                        <img src="${thumbUrl}" style="width: 52px; height: 52px; border-radius: 8px; object-fit: cover; flex-shrink: 0; cursor: pointer;" onclick="previewPost(${ev.id})" onerror="this.onerror=null; this.src='${LUXURY_FALLBACK_SVG}';">
+                                        <img src="${thumbUrl}" style="width: 52px; height: 52px; border-radius: 8px; object-fit: cover; flex-shrink: 0; cursor: pointer;" onclick="previewPost('${ev.id}')" onerror="this.onerror=null; this.src='${LUXURY_FALLBACK_SVG}';">
                                         <div style="line-height: 1.25; overflow: hidden; min-width: 0;">
                                             <div class="fw-bold text-warning small caption-clamp-1"><i class="fa-solid fa-calendar-day me-1"></i>${dt.exact_date}</div>
                                             <div class="fw-bold text-white caption-clamp-1" style="font-size: 0.8rem;"><i class="fa-solid fa-clock text-info me-1"></i>${dt.exact_time}</div>
@@ -1308,7 +1308,7 @@ STUDIO_HTML = """<!DOCTYPE html>
 
                                 <div class="d-flex gap-2 mt-2 pt-2 border-top border-secondary border-opacity-50">
                                     ${actionBtn}
-                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1" style="font-size: 0.72rem;" onclick="deletePost(${ev.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1" style="font-size: 0.72rem;" onclick="deletePost('${ev.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -1372,7 +1372,7 @@ STUDIO_HTML = """<!DOCTYPE html>
                 html += `
                     <div class="col-6 col-sm-4 col-md-3 col-lg-2" id="feed-post-${p.id}">
                         <div class="reel-card">
-                            <div class="reel-thumb-container" onclick="previewPost(${p.id})">
+                            <div class="reel-thumb-container" onclick="previewPost('${p.id}')">
                                 <img src="${thumbUrl}" class="reel-thumb-img" onerror="this.onerror=null; this.src='${LUXURY_FALLBACK_SVG}';">
                                 <div style="position: absolute; top: 4px; left: 4px;">${platBadge}</div>
                                 <div style="position: absolute; bottom: 4px; left: 4px;">${statusBadge}</div>
@@ -1382,9 +1382,9 @@ STUDIO_HTML = """<!DOCTYPE html>
                                     ${p.caption || 'Perfume Post'}
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mt-1 pt-1 border-top border-secondary border-opacity-50">
-                                    <button class="btn btn-sm btn-link text-warning p-0" onclick="previewPost(${p.id})" title="Preview"><i class="fa-solid fa-eye"></i></button>
-                                    ${p.status !== 'UPLOADED' ? `<button class="btn btn-sm btn-link text-primary p-0" onclick="forcePost(${p.id})" title="Post Now"><i class="fa-solid fa-bolt"></i></button>` : ''}
-                                    <button class="btn btn-sm btn-link text-danger p-0" onclick="deletePost(${p.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                                    <button class="btn btn-sm btn-link text-warning p-0" onclick="previewPost('${p.id}')" title="Preview"><i class="fa-solid fa-eye"></i></button>
+                                    ${p.status !== 'UPLOADED' ? `<button class="btn btn-sm btn-link text-primary p-0" onclick="forcePost('${p.id}')" title="Post Now"><i class="fa-solid fa-bolt"></i></button>` : ''}
+                                    <button class="btn btn-sm btn-link text-danger p-0" onclick="deletePost('${p.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
                                 </div>
                             </div>
                         </div>
