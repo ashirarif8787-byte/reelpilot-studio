@@ -610,6 +610,28 @@ def api_post_now(post_id):
     current_db = get_db()
     post = current_db.get_post(post_id) if current_db else None
     if not post:
+        try:
+            from app.modules.cloud_queue import cloud_queue
+            for item in cloud_queue.get_all_posts():
+                if str(item.get("id")) == str(post_id):
+                    from app.database.models import Post
+                    m_urls = item.get("media_urls", [])
+                    f_path = json.dumps(m_urls) if len(m_urls) > 1 else (m_urls[0] if m_urls else "")
+                    post = Post(
+                        id=int(item["id"]),
+                        file_path=f_path,
+                        file_hash=f"restored_{item['id']}",
+                        target_platform=item.get("target_platform", "instagram"),
+                        media_type=item.get("media_type", "image"),
+                        caption=item.get("caption", ""),
+                        hashtags=item.get("hashtags", ""),
+                        status=item.get("status", "SCHEDULED")
+                    )
+                    break
+        except Exception as ex:
+            logger.warning(f"Error restoring post in post-now: {ex}")
+
+    if not post:
         return jsonify({"success": False, "error": "Post not found"}), 404
 
     from app.modules.scheduler import execute_post_upload
@@ -677,6 +699,23 @@ def api_cron_check_due():
         pid = p.get("id")
         plat = p.get("target_platform", "instagram")
         try:
+            # 1. Prevent duplicate Facebook upload:
+            # If Facebook was already scheduled natively on Meta's servers, Meta auto-publishes it!
+            is_fb_native = (plat == "facebook" and bool(p.get("remote_media_id") or p.get("is_native_scheduled")))
+            if is_fb_native:
+                logger.info(f"✅ [Cron] Facebook post #{pid} was natively scheduled on Meta servers. Marking live UPLOADED.")
+                cloud_queue.update_post_status(pid, "UPLOADED", remote_id=p.get("remote_media_id"), remote_url=p.get("remote_url"))
+                if current_db:
+                    current_db.update_post(pid, status=PostStatus.UPLOADED.value)
+                results.append({
+                    "post_id": pid,
+                    "platform": plat,
+                    "success": True,
+                    "remote_id": p.get("remote_media_id"),
+                    "note": "Published via Meta Native Cloud Scheduler"
+                })
+                continue
+
             cloud_queue.update_post_status(pid, "UPLOADING")
             success, remote_id, err = execute_post_upload(pid, db=current_db)
             results.append({
@@ -860,15 +899,21 @@ def api_upload():
         current_db = get_db()
         created_post_ids = []
 
-        for p in platforms_to_save:
+        # Generate globally unique millisecond timestamp integer IDs (e.g. 1793310450001)
+        base_time_ms = int(time.time() * 1000)
+
+        for idx, p in enumerate(platforms_to_save):
+            unique_post_id = base_time_ms + idx + 1
             if current_db:
                 base_hash = current_db.calculate_file_hash(saved_file_paths[0])
-                f_hash = f"{base_hash}_{p}_{int(time.time()*1000)}"
-                post_id = current_db.insert_post(
+                f_hash = f"{base_hash}_{p}_{int(time.time()*1000)}_{idx}"
+                post_id = current_db.insert_post_with_id(
+                    post_id=unique_post_id,
                     file_path=stored_file_path,
                     file_hash=f_hash,
                     target_platform=p,
-                    media_type=media_type
+                    media_type=media_type,
+                    status=post_status
                 )
                 if post_id:
                     current_db.update_post(
@@ -879,25 +924,26 @@ def api_upload():
                         status=post_status
                     )
                     created_post_ids.append(post_id)
+                else:
+                    created_post_ids.append(unique_post_id)
+            else:
+                created_post_ids.append(unique_post_id)
 
-        # Sync scheduled posts to persistent CloudQueue (guarantees persistence across Vercel cold restarts)
-        try:
-            from app.modules.cloud_queue import cloud_queue
-            for idx, pid in enumerate(created_post_ids):
-                plat = platforms_to_save[idx] if idx < len(platforms_to_save) else platforms_to_save[0]
-                cloud_queue.add_scheduled_post({
-                    "id": pid,
-                    "target_platform": plat,
-                    "caption": final_caption,
-                    "hashtags": final_hashtags,
-                    "scheduled_time": post_sched_time,
-                    "media_type": media_type,
-                    "media_urls": p_paths,
-                    "status": post_status,
-                    "created_at": datetime.now(timezone.utc).isoformat()
-                })
-        except Exception as cqe:
-            logger.error(f"[api_upload] CloudQueue sync error: {cqe}")
+        # Prepare queue items for atomic batch sync
+        queue_items_to_sync = []
+        for idx, pid in enumerate(created_post_ids):
+            plat = platforms_to_save[idx] if idx < len(platforms_to_save) else platforms_to_save[0]
+            queue_items_to_sync.append({
+                "id": pid,
+                "target_platform": plat,
+                "caption": final_caption,
+                "hashtags": final_hashtags,
+                "scheduled_time": post_sched_time,
+                "media_type": media_type,
+                "media_urls": p_paths,
+                "status": post_status,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
 
         # Facebook Native Cloud Scheduling (Meta Page API schedules directly on Meta servers)
         if schedule_mode == "calendar" and post_sched_time and "facebook" in platforms_to_save:
@@ -908,9 +954,9 @@ def api_upload():
                     diff_seconds = int(sched_dt.timestamp() - time.time())
                     if 600 <= diff_seconds <= 6480000:
                         fb_pid = None
-                        for pid in created_post_ids:
-                            p_rec = current_db.get_post(pid) if current_db else None
-                            if p_rec and p_rec.target_platform == "facebook":
+                        for idx, pid in enumerate(created_post_ids):
+                            plat = platforms_to_save[idx] if idx < len(platforms_to_save) else platforms_to_save[0]
+                            if plat == "facebook":
                                 fb_pid = pid
                                 break
                         if fb_pid:
@@ -931,17 +977,27 @@ def api_upload():
                                     hashtags=final_hashtags,
                                     scheduled_time=fb_unix
                                 )
-                            if fb_ok:
+                            else:
+                                fb_ok = False
+
+                            if fb_ok and fb_id:
                                 logger.info(f"🚀 [Facebook Native] Post #{fb_pid} successfully scheduled on Meta servers! Remote ID: {fb_id}")
                                 if current_db:
                                     current_db.update_post(fb_pid, status=PostStatus.SCHEDULED.value, remote_media_id=fb_id, remote_url=fb_url)
-                                try:
-                                    from app.modules.cloud_queue import cloud_queue
-                                    cloud_queue.update_post_status(fb_pid, "SCHEDULED", remote_id=fb_id, remote_url=fb_url)
-                                except Exception:
-                                    pass
+                                for q_item in queue_items_to_sync:
+                                    if q_item["id"] == fb_pid:
+                                        q_item["remote_media_id"] = fb_id
+                                        q_item["remote_url"] = fb_url
+                                        q_item["is_native_scheduled"] = True
             except Exception as fb_sched_ex:
                 logger.warning(f"Facebook native schedule warning: {fb_sched_ex}")
+
+        # Sync scheduled posts atomically to persistent CloudQueue in a single commit
+        try:
+            from app.modules.cloud_queue import cloud_queue
+            cloud_queue.add_scheduled_posts(queue_items_to_sync)
+        except Exception as cqe:
+            logger.error(f"[api_upload] CloudQueue sync error: {cqe}")
 
         # 3. Background execution for instant uploads or due posts (Non-blocking!)
         due_now_pids = []
