@@ -596,8 +596,13 @@ def check_and_upload_due_posts(db=None):
     try:
         from app.modules.cloud_queue import cloud_queue
         for cp in cloud_queue.get_due_posts():
-            if cp.get("id"):
-                due_posts.append(int(cp["id"]))
+            if not cp.get("id"):
+                continue
+            pid = int(cp["id"])
+            # Claim before publishing: the cron job may be looking at the same
+            # post at the same moment and must not publish it a second time.
+            if cloud_queue.claim_post(pid) and pid not in due_posts:
+                due_posts.append(pid)
     except Exception as cqe:
         logger.warning(f"[check_due] Cloud queue check error: {cqe}")
 

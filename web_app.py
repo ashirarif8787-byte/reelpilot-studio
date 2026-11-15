@@ -342,11 +342,15 @@ def format_post_datetime(iso_str: str) -> dict:
 @app.route("/api/calendar")
 def api_calendar():
     current_db = get_db()
-    try:
-        from app.modules.scheduler import check_and_upload_due_posts
-        check_and_upload_due_posts(db=current_db)
-    except Exception as ce:
-        logger.warning(f"Error checking due posts in calendar: {ce}")
+    # On Vercel the cron job is the single publisher. Letting this dashboard poll
+    # publish too made both of them grab the same due post and post it twice,
+    # because the queue store is only eventually consistent.
+    if not IS_VERCEL:
+        try:
+            from app.modules.scheduler import check_and_upload_due_posts
+            check_and_upload_due_posts(db=current_db)
+        except Exception as ce:
+            logger.warning(f"Error checking due posts in calendar: {ce}")
 
     posts = current_db.get_posts(limit=150) if current_db else []
     seen_ids = set()
@@ -828,7 +832,9 @@ def api_cron_check_due():
                 })
                 continue
 
-            cloud_queue.update_post_status(pid, "UPLOADING")
+            if not cloud_queue.claim_post(pid):
+                logger.info(f"[Cron] Post #{pid} is already being published by another trigger. Skipping.")
+                continue
             success, remote_id, err = execute_post_upload(pid, db=current_db)
             results.append({
                 "post_id": pid,

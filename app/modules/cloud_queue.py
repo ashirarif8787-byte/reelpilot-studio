@@ -7,6 +7,7 @@ and local daemons share 100% persistent state across cold starts and laptop rest
 import os
 import sys
 import json
+import time
 import base64
 import requests
 from datetime import datetime, timezone
@@ -42,7 +43,11 @@ class CloudQueueManager:
         if not self.blob_ready:
             return None
         try:
-            resp = requests.get(f"{BLOB_BASE_URL}/{BLOB_PATH}", headers=self._blob_headers(), timeout=8)
+            # The blob CDN happily serves a minute-old copy of this path, which
+            # made two triggers think the same post was still SCHEDULED. A unique
+            # query string always reaches the origin.
+            cb = f"{int(time.time() * 1000)}-{os.urandom(3).hex()}"
+            resp = requests.get(f"{BLOB_BASE_URL}/{BLOB_PATH}?v={cb}", headers=self._blob_headers(), timeout=8)
             if resp.status_code != 200:
                 return None
             data = resp.json()
@@ -228,6 +233,34 @@ class CloudQueueManager:
                 logger.warning(f"[CloudQueue] Date parse fallback for {sched_str}: {ex}")
                 due.append(p)
         return due
+
+    def claim_post(self, post_id: int) -> bool:
+        """
+        Take ownership of a due post right before publishing it.
+
+        Two triggers can look at the queue at the same moment (the dashboard poll
+        on /api/calendar and the cron job), and without a claim both of them
+        publish the same post twice. Only the caller that flips
+        SCHEDULED -> UPLOADING wins; everyone else skips it.
+        """
+        q = self.fetch_queue()
+        queue_data = q.get("data", {"scheduled": [], "history": []})
+        claimed = False
+        for p in queue_data.get("scheduled", []):
+            if str(p.get("id")) != str(post_id):
+                continue
+            if p.get("status") not in ("SCHEDULED", "QUEUED"):
+                return False
+            if p.get("remote_media_id") or p.get("is_native_scheduled"):
+                return False
+            p["status"] = "UPLOADING"
+            p["updated_at"] = datetime.now(timezone.utc).isoformat()
+            claimed = True
+            break
+        if claimed:
+            logger.info(f"[CloudQueue] Claimed post #{post_id} for publishing.")
+            self.save_queue(queue_data, sha=q.get("sha"))
+        return claimed
 
     def update_post_status(
         self,

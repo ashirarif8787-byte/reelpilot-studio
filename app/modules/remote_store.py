@@ -21,6 +21,7 @@ import base64
 import json
 import os
 import threading
+import time
 from typing import Any, Dict
 
 import requests
@@ -124,7 +125,10 @@ def _blob_load() -> Dict[str, Any]:
     if not blob_ready():
         return {}
     try:
-        resp = requests.get(f"{BLOB_BASE_URL}/{BLOB_PATH}", headers=_blob_headers(), timeout=8)
+        # Bypass the blob CDN cache: a stale read here would show the account as
+        # disconnected right after it was connected.
+        cb = f"{int(time.time() * 1000)}-{os.urandom(3).hex()}"
+        resp = requests.get(f"{BLOB_BASE_URL}/{BLOB_PATH}?v={cb}", headers=_blob_headers(), timeout=8)
         if resp.status_code == 404:
             logger.info("[MetaState] No stored Facebook connection in Vercel Blob yet.")
             return {}
