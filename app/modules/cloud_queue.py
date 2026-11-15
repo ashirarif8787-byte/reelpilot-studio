@@ -16,15 +16,67 @@ from app.utils.logger import logger
 GITHUB_REPO = os.environ.get("QUEUE_GITHUB_REPO", "ashirarif8787-byte/reelpilot-studio")
 GITHUB_PATH = os.environ.get("QUEUE_GITHUB_PATH", "data/queue.json")
 
+# Private Vercel Blob store attached to the project: the queue survives cold
+# starts, so a post scheduled from a laptop still fires with the laptop closed.
+BLOB_PATH = os.environ.get("QUEUE_BLOB_PATH", "reelpilot/queue.json")
+BLOB_BASE_URL = os.environ.get("BLOB_STORE_BASE_URL", "").strip().rstrip("/")
+BLOB_UPLOAD_URL = "https://blob.vercel-storage.com"
+
 class CloudQueueManager:
     def __init__(self):
         self.repo = GITHUB_REPO
         self.path = GITHUB_PATH
         # Never hardcode a token in source: read it from the environment only.
         self.token = os.environ.get("GITHUB_TOKEN", "").strip()
-        # Without a token there is nothing to talk to: stay on the local queue
-        # instead of hammering the API and logging 401s on every page load.
-        self.enabled = bool(self.token)
+        self.blob_token = os.environ.get("BLOB_READ_WRITE_TOKEN", "").strip()
+        self.blob_ready = bool(self.blob_token) and bool(BLOB_BASE_URL)
+        # Without a store there is nothing to talk to: stay on the local queue
+        # instead of hammering an API and logging 401s on every page load.
+        self.enabled = self.blob_ready or bool(self.token)
+
+    def _blob_headers(self) -> Dict[str, str]:
+        return {"authorization": f"Bearer {self.blob_token}"}
+
+    def _blob_load(self) -> Optional[Dict[str, Any]]:
+        """The stored queue, or None when the store has nothing yet."""
+        if not self.blob_ready:
+            return None
+        try:
+            resp = requests.get(f"{BLOB_BASE_URL}/{BLOB_PATH}", headers=self._blob_headers(), timeout=8)
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+            if isinstance(data, dict):
+                return data
+        except Exception as exc:
+            logger.warning(f"[CloudQueue] Blob load error: {exc}")
+        return None
+
+    def _blob_save(self, queue_data: Dict[str, Any]) -> bool:
+        if not self.blob_ready:
+            return False
+        headers = {
+            "authorization": f"Bearer {self.blob_token}",
+            "x-vercel-blob-access": "private",
+            "x-add-random-suffix": "0",
+            "x-allow-overwrite": "1",
+            "x-content-type": "application/json",
+            "x-cache-control-max-age": "60",
+        }
+        try:
+            resp = requests.put(
+                f"{BLOB_UPLOAD_URL}/{BLOB_PATH}",
+                data=json.dumps(queue_data, ensure_ascii=False).encode("utf-8"),
+                headers=headers,
+                timeout=12,
+            )
+            if resp.status_code in (200, 201):
+                logger.info("[CloudQueue] Queue saved to Vercel Blob.")
+                return True
+            logger.warning(f"[CloudQueue] Blob save failed HTTP {resp.status_code}: {resp.text[:120]}")
+        except Exception as exc:
+            logger.warning(f"[CloudQueue] Blob save error: {exc}")
+        return False
 
     def _get_headers(self) -> Dict[str, str]:
         return {
@@ -44,7 +96,21 @@ class CloudQueueManager:
         return {"success": True, "sha": None, "data": {"scheduled": [], "history": []}}
 
     def fetch_queue(self) -> Dict[str, Any]:
-        """Fetches the queue JSON and its git blob SHA from GitHub."""
+        """Fetches the queue: Blob first, then GitHub, then the local file."""
+        if self.blob_ready:
+            blob = self._blob_load()
+            if blob is not None:
+                return {
+                    "success": True,
+                    "sha": None,
+                    "data": {
+                        "scheduled": blob.get("scheduled") or [],
+                        "history": blob.get("history") or [],
+                    },
+                }
+            if not self.token:
+                # Nothing stored yet and no GitHub fallback: start empty.
+                return {"success": True, "sha": None, "data": {"scheduled": [], "history": []}}
         if not self.enabled:
             return self._local_queue()
         try:
@@ -69,7 +135,9 @@ class CloudQueueManager:
         return self._local_queue()
 
     def save_queue(self, queue_data: Dict[str, Any], sha: Optional[str] = None) -> bool:
-        """Saves updated queue JSON to GitHub with a commit."""
+        """Saves the queue to durable storage."""
+        if self._blob_save(queue_data):
+            return True
         if not self.enabled:
             return False
         try:
