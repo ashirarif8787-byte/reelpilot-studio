@@ -41,6 +41,9 @@ DEFAULT_SCOPES = [
     "pages_read_engagement",
     "instagram_basic",
     "instagram_content_publish",
+    # Pages that live inside a business portfolio are only reachable through the
+    # business APIs, and those reject the call without this permission.
+    "business_management",
 ]
 
 PAGE_FIELDS = "id,name,access_token,instagram_business_account{id,username}"
@@ -82,7 +85,39 @@ TOKEN_SUBCODE_HINTS = {
 # ---------------------------------------------------------------------------
 # App credentials
 # ---------------------------------------------------------------------------
+_REMOTE_CHECKED = {"done": False}
+
+
+def ensure_state_loaded() -> None:
+    """
+    Pull the stored connection into this process, once.
+
+    A serverless instance can boot long after the login happened (or keep running
+    with the config it read before it), so an instance holding an empty config
+    must not report the account as disconnected when durable storage knows better.
+    """
+    if _REMOTE_CHECKED["done"]:
+        return
+    _REMOTE_CHECKED["done"] = True
+    if (getattr(config_manager.config, "meta_access_token", "") or "").strip():
+        return
+    try:
+        from app.modules import remote_store
+        if not remote_store.is_enabled():
+            return
+        stored = remote_store.load_meta()
+        if not stored or not (stored.get("meta_access_token") or "").strip():
+            return
+        fields = {k: v for k, v in stored.items() if k in remote_store.META_FIELDS}
+        config_manager.update(**fields)
+        clear_health_cache()
+        logger.info("[MetaAuth] Connection loaded from durable storage for this instance.")
+    except Exception as exc:
+        logger.warning(f"[MetaAuth] Durable state read failed: {exc}")
+
+
 def _cfg():
+    ensure_state_loaded()
     return config_manager.config
 
 
@@ -138,6 +173,10 @@ def build_login_url(redirect_uri: str, state: str, scopes: Optional[List[str]] =
         "state": state,
         "response_type": "code",
         "scope": ",".join(scopes or DEFAULT_SCOPES),
+        # Facebook silently reuses the permissions of an earlier login, so a user
+        # who connected before the Page scopes existed gets a token without them.
+        # Forcing the dialog to re-ask is the only way to pick the missing ones up.
+        "auth_type": "rerequest",
     }
     return f"{OAUTH_DIALOG_URL}?{urllib.parse.urlencode(params)}"
 
@@ -190,24 +229,120 @@ def extend_to_long_lived(user_token: str) -> Tuple[str, int]:
     return data["access_token"], int(data.get("expires_in") or 0)
 
 
-def fetch_pages(user_token: str) -> List[Dict[str, Any]]:
-    """Step 3a: every Page the user administers, with its own Page token."""
-    params = {"access_token": user_token, "fields": PAGE_FIELDS, "limit": 100}
+def granted_permissions(user_token: str) -> List[str]:
+    """Which permissions this login actually carries (Meta drops the ones it skipped)."""
+    data = _json(_graph_get("me/permissions", {"access_token": user_token}))
+    return [
+        row.get("permission", "")
+        for row in (data.get("data") or [])
+        if (row.get("status") or "").lower() == "granted"
+    ]
+
+
+def pages_diagnostic(user_token: str) -> str:
+    """One line that explains an empty /me/accounts, for the reconnect message."""
+    parts = []
+    try:
+        perms = granted_permissions(user_token)
+        parts.append("granted=" + (",".join(perms) if perms else "none"))
+    except Exception as exc:
+        parts.append(f"permissions error: {exc}")
+    try:
+        data = _json(_graph_get("me/accounts", {
+            "access_token": user_token, "fields": "id,name", "limit": 100,
+        }))
+        if "error" in data:
+            parts.append("accounts error: " + str(data["error"].get("message"))[:120])
+        else:
+            parts.append(f"accounts={len(data.get('data') or [])}")
+    except Exception as exc:
+        parts.append(f"accounts error: {exc}")
+    try:
+        me = _json(_graph_get("me", {"access_token": user_token, "fields": "id,name"}))
+        parts.append(f"user={me.get('name') or me.get('id') or '?'}")
+    except Exception:
+        pass
+    return "; ".join(parts)
+
+
+LAST_PAGES_TRACE: Dict[str, Any] = {"trace": "", "user_token": ""}
+
+
+def _pages_from(path: str, user_token: str, fields: str = PAGE_FIELDS,
+                extra: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    """Read one paged Page listing, returning [] instead of raising."""
+    params: Dict[str, Any] = {"access_token": user_token, "fields": fields, "limit": 100}
+    if extra:
+        params.update(extra)
     pages: List[Dict[str, Any]] = []
-    url: Optional[str] = f"{GRAPH}/me/accounts"
+    url: Optional[str] = f"{GRAPH}/{path.lstrip('/')}"
     for _ in range(5):  # follow paging, bounded
         if not url:
             break
         try:
             resp = requests.get(url, params=params, timeout=20)
-        except requests.RequestException as exc:
-            raise MetaAuthError(f"Network error while fetching Facebook Pages: {exc}")
-        data = _json(resp)
+        except requests.RequestException:
+            break
+        try:
+            data = resp.json()
+        except ValueError:
+            break
         if "error" in data:
-            raise MetaAuthError(format_meta_error(data, "Could not read Facebook Pages."))
+            break
         pages.extend(data.get("data") or [])
         url = (data.get("paging") or {}).get("next")
         params = {}  # the "next" URL already carries the query string
+    return pages
+
+
+def fetch_pages(user_token: str) -> List[Dict[str, Any]]:
+    """
+    Step 3a: every Page the user administers, with its own Page token.
+
+    Business-type apps hand Page permissions to a business portfolio instead of
+    the profile, and then /me/accounts comes back empty. Each fallback below is
+    authoritative for a different setup, so they are tried in order.
+    """
+    trace: List[str] = []
+
+    pages = _pages_from("me/accounts", user_token)
+    trace.append(f"me/accounts={len(pages)}")
+
+    if not pages:
+        owned = _pages_from("me/owned_pages", user_token)
+        trace.append(f"me/owned_pages={len(owned)}")
+        pages = owned
+
+    if not pages:
+        assigned = _pages_from("me/assigned_pages", user_token)
+        trace.append(f"me/assigned_pages={len(assigned)}")
+        pages = assigned
+
+    if not pages:
+        # Business portfolio pages: owned + client pages of every business the
+        # login can see. This is where a Business-type app usually finds them.
+        try:
+            data = _json(_graph_get("me/businesses", {
+                "access_token": user_token,
+                "fields": ("id,name,"
+                           "owned_pages{id,name,access_token,instagram_business_account{id,username}},"
+                           "client_pages{id,name,access_token,instagram_business_account{id,username}}"),
+                "limit": 100,
+            }))
+            if "error" in data:
+                trace.append("me/businesses=" + str(data["error"].get("message"))[:80])
+            else:
+                for biz in data.get("data") or []:
+                    for key in ("owned_pages", "client_pages"):
+                        rows = (biz.get(key) or {}).get("data") or []
+                        trace.append(f"business:{biz.get('id')}.{key}={len(rows)}")
+                        pages.extend(rows)
+        except Exception as exc:
+            trace.append(f"me/businesses error: {exc}")
+
+    LAST_PAGES_TRACE["trace"] = "; ".join(trace)
+    LAST_PAGES_TRACE["user_token"] = user_token
+    logger.info(f"[MetaAuth] Page discovery: {LAST_PAGES_TRACE['trace']}")
     return pages
 
 
@@ -372,7 +507,8 @@ def connect(user_token: str, preferred_page_id: str = "") -> Dict[str, Any]:
         page = _pick_page(pages, preferred_page_id or cfg.facebook_page_id, cfg.brand_name)
         if not page:
             raise MetaAuthError(
-                "No Facebook Page found for this login. Make sure your account is an admin of the Page."
+                "No Facebook Page found for this login. Make sure your account is an admin of the Page "
+                f"({pages_diagnostic(long_lived_user_token)}; discovery: {LAST_PAGES_TRACE['trace']})."
             )
         page_token = page.get("access_token") or long_lived_user_token
         page_id = str(page.get("id") or "")
