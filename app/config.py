@@ -4,20 +4,37 @@ from dataclasses import dataclass, asdict
 from typing import Optional
 from pathlib import Path
 
-# PERMANENT CREDENTIALS (NEVER EXPIRES)
-PERMANENT_META_TOKEN = "EAAZATAUGR6T0BSZCvsRTCqnkWl4PI0cJI5YvHcAEtlEp96JB59RSTGdEqbND72SDY01BRLdO0dQxi0xjXbdAmCZAxZBuKOvVEKUW9I2tMFNyC8ZBdnd2F6ZC5caZAQ6ZBhuX1tZA7TVMZB85Ec7rk9q4duiUJygZAmdXxTU5kd2sJZBUCBO2mrzhWWlpg4huzuJL64d7ZCPF4lsE9"
-PERMANENT_FB_PAGE_ID = "800869286434757"
-PERMANENT_IG_ID = "17841423338066933"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Load .env once so credentials stay out of the source code.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
+except Exception:
+    pass
+
+# ---------------------------------------------------------------------------
+# META / FACEBOOK CREDENTIALS
+#
+# A Meta access token is NOT permanent. Long-lived Page tokens have no expiry
+# date, but Meta invalidates them on password change / app removal / security
+# checks (error 190, subcode 460). The app therefore obtains its own token via
+# "Connect with Facebook" (see app/modules/meta_auth.py) and repairs it
+# automatically. Nothing below is required for that flow except the App ID and
+# App Secret, which live in .env — never in this file.
+# ---------------------------------------------------------------------------
+PERMANENT_META_TOKEN = os.getenv("META_ACCESS_TOKEN", "")
+PERMANENT_FB_PAGE_ID = os.getenv("FACEBOOK_PAGE_ID", "")
+PERMANENT_IG_ID = os.getenv("INSTAGRAM_ACCOUNT_ID", "")
 PERMANENT_BRAND_NAME = "JANI's Perfume"
 PERMANENT_BRAND_WEBSITE = "janisperfumes.com"
 PERMANENT_BRAND_WHATSAPP = "03134454899"
 PERMANENT_BRAND_FOOTER = """🌐 𝐖𝐞𝐛𝐬𝐢𝐭𝐞 𝐂𝐡𝐞𝐜𝐤𝐨𝐮𝐭: janisperfumes.com
 💬 𝐏𝐫𝐞𝐟𝐞𝐫 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩: 03134454899
 📩 𝐒𝐞𝐧𝐝 𝐮𝐬 𝐚 𝐃𝐌 𝐭𝐨 𝐨𝐫𝐝𝐞𝐫 𝐝𝐢𝐫𝐞𝐜𝐭𝐥𝐲!"""
-PERMANENT_APP_ID = "1780114720418109"
-PERMANENT_APP_SECRET = "6af61d4174e0d667bbe5d022c6f32b3b"
+PERMANENT_APP_ID = os.getenv("META_APP_ID", "")
+PERMANENT_APP_SECRET = os.getenv("META_APP_SECRET", "")
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(PROJECT_ROOT, "config.json")
 
 @dataclass
@@ -39,6 +56,17 @@ class AppConfig:
     facebook_page_id: str = PERMANENT_FB_PAGE_ID
     meta_app_id: str = PERMANENT_APP_ID
     meta_app_secret: str = PERMANENT_APP_SECRET
+
+    # Meta OAuth connection state — written automatically by "Connect with Facebook"
+    meta_user_token: str = ""                 # long-lived Facebook login (~60 days)
+    meta_user_token_expires_at: int = 0
+    meta_data_access_expires_at: int = 0       # when the granted permissions lapse
+    meta_page_token_expires_at: int = 0        # 0 = Page token has no fixed expiry
+    meta_page_name: str = ""
+    meta_ig_username: str = ""
+    meta_connected_at: str = ""
+    meta_needs_reauth: bool = False
+    meta_last_error: str = ""
     
     tiktok_client_key: str = ""
     tiktok_client_secret: str = ""
@@ -145,8 +173,12 @@ class ConfigManager:
         if cfg:
             self.config = cfg
         try:
+            data = asdict(self.config)
+            # The App Secret belongs to .env only — never duplicate it into config.json.
+            if "meta_app_secret" in data:
+                data["meta_app_secret"] = ""
             with open(self.config_file, "w", encoding="utf-8") as f:
-                json.dump(asdict(self.config), f, indent=4)
+                json.dump(data, f, indent=4)
         except Exception:
             pass
 

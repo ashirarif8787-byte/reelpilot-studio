@@ -831,33 +831,34 @@ STUDIO_HTML = """<!DOCTYPE html>
                         </div>
                     </div>
 
-                    <!-- Connected Social Accounts -->
+                    <!-- Facebook + Instagram Connection (one click, no tokens) -->
                     <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary border-opacity-50 mb-3">
-                        <div class="fw-bold text-primary small mb-2"><i class="fa-brands fa-meta me-1"></i>Connected Social Accounts</div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="fw-bold text-primary small mb-0"><i class="fa-brands fa-facebook me-1"></i>Facebook + Instagram Connection</div>
+                            <span class="badge bg-secondary" id="setting-conn-status">Checking...</span>
+                        </div>
                         <div class="row g-2 mb-2">
                             <div class="col-12 col-md-6">
-                                <label class="small text-white-50 mb-1"><i class="fa-brands fa-instagram text-danger me-1"></i>Instagram Account ID</label>
-                                <input type="text" id="setting-ig-id" class="form-control" value="17841423338066933" readonly>
-                                <small class="text-white-50" style="font-size: 0.7rem;">@official_janisperfume (Linked)</small>
+                                <label class="small text-white-50 mb-1">Facebook Page</label>
+                                <input type="text" id="setting-fb-name" class="form-control" value="-" readonly>
                             </div>
                             <div class="col-12 col-md-6">
-                                <label class="small text-white-50 mb-1"><i class="fa-brands fa-facebook text-primary me-1"></i>Facebook Page ID</label>
-                                <input type="text" id="setting-fb-id" class="form-control" value="800869286434757" readonly>
-                                <small class="text-white-50" style="font-size: 0.7rem;">JANI's Perfume (Linked)</small>
+                                <label class="small text-white-50 mb-1">Instagram Account</label>
+                                <input type="text" id="setting-ig-name" class="form-control" value="-" readonly>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Meta Access Token -->
-                    <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary border-opacity-50 mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="small text-white-50 mb-0 fw-bold"><i class="fa-solid fa-key text-warning me-1"></i>Meta Long-Lived Access Token</label>
-                            <span class="badge bg-success bg-opacity-25 text-success" id="setting-token-status">Active</span>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <a href="/auth/facebook" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
+                                <i class="fa-brands fa-facebook me-1"></i><span id="setting-connect-label">Connect with Facebook</span>
+                            </a>
+                            <small class="text-white-50" style="font-size: 0.72rem;" id="setting-conn-note">
+                                Ek click — Page aur Instagram khud connect ho jate hain. Token paste karne ki zaroorat nahi.
+                            </small>
                         </div>
-                        <textarea id="setting-meta-token" class="form-control mb-2" rows="2" placeholder="Paste your Meta Access Token here..."></textarea>
-                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="verifyMetaToken()">
-                            <i class="fa-solid fa-circle-check me-1"></i> Test & Verify Live Connection
-                        </button>
+                        <div class="mt-2 text-white-50" style="font-size: 0.7rem;">
+                            <i class="fa-solid fa-circle-info me-1"></i>Meta Dashboard &rarr; Facebook Login &rarr; Settings &rarr; Valid OAuth Redirect URIs mein ye URL add karein:
+                            <code id="setting-redirect-uri" class="text-warning">/auth/facebook/callback</code>
+                        </div>
                     </div>
 
                     <!-- Daily Quota & Automation -->
@@ -1001,6 +1002,17 @@ STUDIO_HTML = """<!DOCTYPE html>
             loadReelsFeed();
             setInterval(checkLiveHealth, 45000);
             setInterval(loadCalendarFeed, 30000);
+
+            // Result of the one-click Facebook login round trip
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('meta_connected')) {
+                showToast("Facebook + Instagram connected! Token ab khud refresh hoti rahegi.");
+                window.history.replaceState({}, document.title, window.location.pathname);
+                setTimeout(() => checkLiveHealth(true), 1200);
+            } else if (urlParams.get('meta_error')) {
+                showToast(urlParams.get('meta_error'), "error");
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
         });
 
         function showToast(msg, type = "success") {
@@ -1204,17 +1216,19 @@ STUDIO_HTML = """<!DOCTYPE html>
                 if (data.connected && data.status === 'ACTIVE') {
                     if (pill) pill.className = 'status-pill';
                     if (dot) dot.style.backgroundColor = '#10b981';
-                    const ig = (data.instagram && data.instagram.username) ? data.instagram.username : "official_janisperfume";
-                    const fb = (data.facebook && data.facebook.name) ? data.facebook.name : "JANI\'s Perfume";
+                    const ig = (data.instagram && data.instagram.username) ? data.instagram.username : "Not Connected";
+                    const fb = (data.facebook && data.facebook.name) ? data.facebook.name : "Facebook Page";
+                    const days = (data.days_left === null || data.days_left === undefined) ? '' : ` &middot; ${data.days_left} din baqi`;
                     if (text) text.innerText = `@${ig} (Live Active)`;
-                    if (sum) sum.innerHTML = `Instagram: <strong class="text-warning">@${ig}</strong> | Facebook: <strong class="text-primary">${fb}</strong> (Graph API Live)`;
-                    if (isUser) showToast("Meta Graph API Connected & Live!");
+                    if (sum) sum.innerHTML = `Instagram: <strong class="text-warning">@${ig}</strong> | Facebook: <strong class="text-primary">${fb}</strong> (Graph API Live)${days}`;
+                    if (isUser) showToast("Facebook + Instagram connected & live!");
                 } else {
                     if (pill) pill.className = 'status-pill status-pill-disconnected';
                     if (dot) dot.style.backgroundColor = '#ef4444';
-                    if (text) text.innerText = 'Meta Disconnected';
-                    if (sum) sum.innerHTML = `<span class="text-danger fw-bold">Session Expired or Missing Token. Please reconnect in Settings!</span>`;
-                    if (isUser) showToast(data.message || "Meta Connection Error", "error");
+                    if (text) text.innerText = 'Facebook Disconnected';
+                    const fixLabel = data.needs_reauth ? 'Reconnect' : 'Connect';
+                    if (sum) sum.innerHTML = `<span class="text-danger fw-bold">${data.message || 'Facebook connection expired.'}</span> <a href="/auth/facebook" class="btn btn-sm btn-danger rounded-pill ms-1 py-0 px-2 fw-bold" style="font-size:0.72rem;"><i class="fa-brands fa-facebook me-1"></i>${fixLabel}</a>`;
+                    if (isUser) showToast(data.message || "Facebook connection error", "error");
                 }
             } catch (e) {
                 console.warn("Health check error:", e);
@@ -1607,10 +1621,27 @@ STUDIO_HTML = """<!DOCTYPE html>
                 const data = await res.json();
                 if (data) {
                     if (data.brand_name) document.getElementById('setting-brand-name').value = data.brand_name;
-                    if (data.meta_access_token) document.getElementById('setting-meta-token').value = data.meta_access_token;
                     if (data.daily_limit_insta) document.getElementById('setting-quota-ig').value = data.daily_limit_insta;
                     if (data.daily_limit_facebook) document.getElementById('setting-quota-fb').value = data.daily_limit_facebook;
+                    document.getElementById('setting-fb-name').value = data.meta_page_name || 'Not connected';
+                    document.getElementById('setting-ig-name').value = data.meta_ig_username ? ('@' + data.meta_ig_username) : 'Not connected';
+                    document.getElementById('setting-connect-label').innerText = data.meta_connected ? 'Reconnect with Facebook' : 'Connect with Facebook';
+                    if (data.meta_days_left !== null && data.meta_days_left !== undefined) {
+                        document.getElementById('setting-conn-note').innerText = `${data.meta_days_left} din ki permission baqi — expiry se pehle khud refresh ho jati hai.`;
+                    }
                 }
+            } catch (e) {}
+            try {
+                const health = await (await fetch('/api/accounts/health')).json();
+                const badge = document.getElementById('setting-conn-status');
+                if (health.connected) {
+                    badge.className = 'badge bg-success';
+                    badge.innerText = 'Connected';
+                } else {
+                    badge.className = 'badge bg-danger';
+                    badge.innerText = health.needs_reauth ? 'Reconnect needed' : 'Not connected';
+                }
+                if (health.redirect_uri) document.getElementById('setting-redirect-uri').innerText = health.redirect_uri;
             } catch (e) {}
             settingsModal.show();
         }
@@ -1618,7 +1649,6 @@ STUDIO_HTML = """<!DOCTYPE html>
         async function saveStudioSettings() {
             const payload = {
                 brand_name: document.getElementById('setting-brand-name').value.trim(),
-                meta_access_token: document.getElementById('setting-meta-token').value.trim(),
                 daily_limit_insta: parseInt(document.getElementById('setting-quota-ig').value, 10) || 3,
                 daily_limit_facebook: parseInt(document.getElementById('setting-quota-fb').value, 10) || 3
             };
@@ -1642,30 +1672,6 @@ STUDIO_HTML = """<!DOCTYPE html>
         }
 
 
-        async function verifyMetaToken() {
-            const token = document.getElementById('setting-meta-token').value.trim();
-            if (!token) {
-                showToast("Please paste token first", "warning");
-                return;
-            }
-            showToast("Verifying token with Meta Graph API...", "warning");
-            try {
-                const res = await fetch('/api/verify-token', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ meta_token: token })
-                });
-                const d = await res.json();
-                if (d.success) {
-                    showToast("Token Verified & Connected Successfully!");
-                    checkLiveHealth(true);
-                } else {
-                    showToast(d.error || "Invalid token", "error");
-                }
-            } catch (e) {
-                showToast("Verification error: " + e, "error");
-            }
-        }
 
         
     </script>

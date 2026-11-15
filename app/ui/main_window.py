@@ -237,10 +237,10 @@ class MainWindow:
 
     def _save_settings(self):
         try:
-            config_manager.update(
+            # An empty token box must never wipe the token obtained via "Connect with Facebook".
+            updates = dict(
                 openai_api_key=self.entry_openai_key.get().strip(),
                 openai_model=self.entry_openai_model.get().strip(),
-                meta_access_token=self.entry_meta_token.get().strip(),
                 instagram_account_id=self.entry_ig_id.get().strip(),
                 facebook_page_id=self.entry_fb_id.get().strip(),
                 tiktok_access_token=self.entry_tiktok_token.get().strip(),
@@ -252,6 +252,10 @@ class MainWindow:
                 max_delay_minutes=int(self.entry_max_delay.get().strip() or "240"),
                 image_duration_seconds=int(self.entry_duration.get().strip() or "8")
             )
+            typed_token = self.entry_meta_token.get().strip()
+            if typed_token:
+                updates["meta_access_token"] = typed_token
+            config_manager.update(**updates)
             messagebox.showinfo("Settings Saved", "All API credentials and delay limits have been successfully saved!")
             logger.info("[Settings] Updated configurations saved to config.json.")
         except Exception as e:

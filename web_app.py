@@ -34,6 +34,8 @@ try:
     from app.modules.scheduler import SocialScheduler
 except Exception:
     SocialScheduler = None
+import urllib.parse
+from app.modules import meta_auth
 from app.modules.caption_generator import caption_generator, append_brand_footer
 from app.modules.uploaders import MetaUploader, TikTokUploader
 from app.modules.audio_fetcher import audio_service
@@ -73,6 +75,33 @@ def get_db():
             db = None
     return db
 
+def start_meta_keeper(interval_seconds: int = 6 * 3600):
+    """
+    Keeps the Facebook connection healthy without any user action:
+    repairs/refreshes the Page token from the stored long-lived login and warns
+    early when a reconnect is really needed. One cheap API call every 6 hours.
+    """
+    def _loop():
+        time.sleep(30)
+        while True:
+            try:
+                cfg = config_manager.config
+                if meta_auth.is_configured() and (cfg.meta_access_token or cfg.meta_user_token):
+                    state = meta_auth.health()
+                    days = state.get("days_left")
+                    if state.get("needs_reauth"):
+                        logger.warning(
+                            "⚠️ [MetaAuth] Facebook connection needs a reconnect -> Settings -> Connect with Facebook."
+                        )
+                    elif days is not None and days <= 7:
+                        logger.warning(f"⚠️ [MetaAuth] Facebook permission expires in {days} day(s) — reconnect soon.")
+            except Exception as exc:
+                logger.warning(f"[MetaAuth] Background keeper error: {exc}")
+            time.sleep(interval_seconds)
+
+    threading.Thread(target=_loop, daemon=True).start()
+
+
 if not IS_VERCEL:
     try:
         db = get_db()
@@ -80,6 +109,7 @@ if not IS_VERCEL:
         watcher = FolderWatcherService(db=db)
         watcher.start()
         scheduler.start()
+        start_meta_keeper()
     except Exception as e:
         logger.warning(f"Background worker start skipped: {e}")
 
@@ -96,8 +126,18 @@ def load_accounts():
     fb_connected = bool(cfg.meta_access_token and cfg.facebook_page_id)
     ig_connected = bool(cfg.meta_access_token and cfg.instagram_account_id)
     return {
-        "instagram": {"connected": ig_connected, "username": "official_janisperfume" if ig_connected else "Not Connected", "id": cfg.instagram_account_id or "17841423338066933", "auth_type": "permanent_page_token"},
-        "facebook": {"connected": fb_connected, "page_name": "JANI's Perfume" if fb_connected else "Not Connected", "page_id": cfg.facebook_page_id or "800869286434757", "auth_type": "permanent_page_token"},
+        "instagram": {
+            "connected": ig_connected,
+            "username": (cfg.meta_ig_username or "Not Connected") if ig_connected else "Not Connected",
+            "id": cfg.instagram_account_id or "",
+            "auth_type": "meta_oauth",
+        },
+        "facebook": {
+            "connected": fb_connected,
+            "page_name": (cfg.meta_page_name or cfg.brand_name or "Facebook Page") if fb_connected else "Not Connected",
+            "page_id": cfg.facebook_page_id or "",
+            "auth_type": "meta_oauth",
+        },
         "tiktok": {"connected": False, "username": "", "display_name": ""}
     }
 
@@ -405,65 +445,89 @@ def api_ai_analyze_media():
             except Exception:
                 pass
 
+# --------------------------------------------------------------------
+# FACEBOOK LOGIN (OAuth) — one click, no token pasting
+# --------------------------------------------------------------------
+def _oauth_redirect_uri() -> str:
+    return meta_auth.resolve_redirect_uri(url_for("fb_oauth_callback", _external=True))
+
+
+@app.route("/auth/facebook")
+def fb_oauth_start():
+    if not meta_auth.is_configured():
+        msg = "Meta App ID / App Secret missing. Add META_APP_ID and META_APP_SECRET to .env once."
+        return redirect("/?meta_error=" + urllib.parse.quote(msg))
+
+    redirect_uri = _oauth_redirect_uri()
+    state = meta_auth.new_state()
+    session["fb_oauth_state"] = state
+    session["fb_oauth_redirect_uri"] = redirect_uri
+    try:
+        return redirect(meta_auth.build_login_url(redirect_uri, state))
+    except Exception as exc:
+        logger.error(f"[MetaAuth] Could not start Facebook login: {exc}")
+        return redirect("/?meta_error=" + urllib.parse.quote(str(exc)))
+
+
+@app.route("/auth/facebook/callback")
+def fb_oauth_callback():
+    error = request.args.get("error_description") or request.args.get("error")
+    if error:
+        return redirect("/?meta_error=" + urllib.parse.quote(error))
+
+    expected_state = session.pop("fb_oauth_state", None)
+    if not expected_state or request.args.get("state") != expected_state:
+        return redirect("/?meta_error=" + urllib.parse.quote("Facebook login state mismatch. Please try again."))
+
+    code = request.args.get("code", "").strip()
+    redirect_uri = session.pop("fb_oauth_redirect_uri", "") or _oauth_redirect_uri()
+    if not code:
+        return redirect("/?meta_error=" + urllib.parse.quote("Facebook did not return an authorization code."))
+
+    try:
+        user_token = meta_auth.exchange_code(code, redirect_uri)
+        summary = meta_auth.connect(user_token)
+
+        acc = load_accounts()
+        acc["facebook"] = {
+            "connected": True,
+            "page_name": summary["page_name"],
+            "page_id": summary["page_id"],
+            "auth_type": "meta_oauth",
+        }
+        acc["instagram"] = {
+            "connected": bool(summary["instagram_id"]),
+            "username": summary["instagram_username"] or "Not Connected",
+            "id": summary["instagram_id"],
+            "auth_type": "meta_oauth",
+        }
+        save_accounts(acc)
+        logger.info(f"✅ [MetaAuth] Facebook login complete for Page '{summary['page_name']}'.")
+        return redirect("/?meta_connected=1")
+    except Exception as exc:
+        logger.error(f"[MetaAuth] Facebook login failed: {exc}")
+        return redirect("/?meta_error=" + urllib.parse.quote(str(exc)))
+
+
 @app.route("/api/accounts/health")
 def api_accounts_health():
-    from app.config import PERMANENT_META_TOKEN
-    cfg = config_manager.config
-
-    candidate_tokens = []
-    # 1. Prioritize permanent verified token first for instant sub-second verification
-    if PERMANENT_META_TOKEN and PERMANENT_META_TOKEN.strip():
-        candidate_tokens.append(PERMANENT_META_TOKEN.strip())
-    # 2. Then check user runtime config token if different
-    if cfg.meta_access_token and cfg.meta_access_token.strip() and cfg.meta_access_token.strip() not in candidate_tokens:
-        candidate_tokens.append(cfg.meta_access_token.strip())
-    # 3. Then check request header token
-    header_token = request.headers.get("X-Meta-Token", "").strip()
-    if header_token and header_token not in candidate_tokens:
-        candidate_tokens.append(header_token)
-
-    last_err_data = None
-    for token in candidate_tokens:
-        try:
-            url = f"https://graph.facebook.com/v19.0/me?access_token={token}&fields=id,name"
-            r = requests.get(url, timeout=3.5)
-            data = r.json()
-            if "error" not in data:
-                user_name = data.get("name", "Official Brand")
-                return jsonify({
-                    "connected": True,
-                    "status": "ACTIVE",
-                    "user_name": user_name,
-                    "message": f"Connected & Verified Live with Meta ({user_name})!",
-                    "facebook": {
-                        "connected": bool(cfg.facebook_page_id or "800869286434757"),
-                        "name": cfg.brand_name or "JANI's Perfume",
-                        "id": cfg.facebook_page_id or "800869286434757"
-                    },
-                    "instagram": {
-                        "connected": bool(cfg.instagram_account_id or "17841423338066933"),
-                        "username": "official_janisperfume",
-                        "id": cfg.instagram_account_id or "17841423338066933"
-                    }
-                })
-            else:
-                last_err_data = data["error"]
-        except Exception as ex:
-            logger.warning(f"Error verifying candidate token: {ex}")
-
-    err_msg = last_err_data.get("message", "Token validation failed") if last_err_data else "No token configured"
-    code = last_err_data.get("code") if last_err_data else 0
-    subcode = last_err_data.get("error_subcode", 0) if last_err_data else 0
-    is_expired = (code == 190 or subcode == 463)
-    return jsonify({
-        "connected": False,
-        "status": "EXPIRED" if is_expired else "ERROR",
-        "message": f"Meta Session Expired: {err_msg}" if is_expired else f"Meta Error: {err_msg}",
-        "error_code": code,
-        "subcode": subcode,
-        "facebook": {"connected": False, "name": cfg.brand_name, "id": cfg.facebook_page_id},
-        "instagram": {"connected": False, "username": "official_janisperfume", "id": cfg.instagram_account_id}
-    })
+    """Live Meta connection state + automatic repair when the token was revoked."""
+    try:
+        data = meta_auth.health()
+    except Exception as exc:
+        logger.error(f"[Health] Meta check failed: {exc}")
+        data = {
+            "connected": False,
+            "status": "ERROR",
+            "needs_reauth": False,
+            "message": f"Meta check failed: {exc}",
+            "days_left": None,
+            "facebook": {"connected": False, "name": config_manager.config.brand_name, "id": ""},
+            "instagram": {"connected": False, "username": "Not Connected", "id": ""},
+        }
+    data["redirect_uri"] = _oauth_redirect_uri()
+    data["app_configured"] = meta_auth.is_configured()
+    return jsonify(data)
 
 @app.route("/api/ai/generate-luxury-copy", methods=["POST"])
 def api_ai_generate_luxury_copy():
@@ -498,50 +562,38 @@ def api_accounts():
 @app.route("/api/accounts/connect-meta", methods=["POST"])
 @app.route("/api/accounts/reconnect-meta", methods=["POST"])
 def api_connect_meta():
+    """Optional manual path (token from Graph API Explorer). Always extends to
+    a long-lived token first, so a pasted short-lived token cannot rot in hours."""
     data = request.json or {}
-    token = data.get("token", "").strip()
+    token = (data.get("token") or data.get("meta_token") or "").strip()
     if not token:
         return jsonify({"success": False, "error": "No token provided"}), 400
 
     try:
-        uploader = MetaUploader(access_token=token)
-        success, pages = uploader.get_user_pages()
-        if not success or not pages:
-            return jsonify({"success": False, "error": "Could not find any Facebook Pages associated with this token."}), 400
-
-        matched_page = None
-        for p in pages:
-            if "jani" in p.get("name", "").lower():
-                matched_page = p
-                break
-        if not matched_page:
-            matched_page = pages[0]
-
-        fb_page_id = matched_page["id"]
-        page_token = matched_page.get("access_token", token)
-        page_name = matched_page.get("name", "Facebook Page")
-
-        ig_success, ig_data = uploader.get_instagram_account(fb_page_id)
-        ig_id = ig_data.get("id", "") if ig_success else ""
-        ig_username = ig_data.get("username", "official_janisperfume") if ig_success else ""
-
-        config_manager.update(
-            meta_access_token=page_token,
-            facebook_page_id=fb_page_id,
-            instagram_account_id=ig_id
-        )
+        summary = meta_auth.connect(token)
 
         acc = load_accounts()
-        acc["facebook"] = {"connected": True, "page_name": page_name, "page_id": fb_page_id, "auth_type": "meta_graph_api"}
-        acc["instagram"] = {"connected": bool(ig_id), "username": ig_username or "official_janisperfume", "id": ig_id, "auth_type": "meta_graph_api"}
+        acc["facebook"] = {
+            "connected": True,
+            "page_name": summary["page_name"],
+            "page_id": summary["page_id"],
+            "auth_type": "meta_oauth",
+        }
+        acc["instagram"] = {
+            "connected": bool(summary["instagram_id"]),
+            "username": summary["instagram_username"] or "Not Connected",
+            "id": summary["instagram_id"],
+            "auth_type": "meta_oauth",
+        }
         save_accounts(acc)
 
         return jsonify({
             "success": True,
-            "message": f"Connected to Facebook Page '{page_name}' and Instagram '@{ig_username}'!"
+            "message": f"Connected to Facebook Page '{summary['page_name']}'"
+                       + (f" and Instagram @{summary['instagram_username']}!" if summary["instagram_username"] else "!"),
         })
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({"success": False, "error": str(e)}), 400
 
 @app.route("/api/open-folder", methods=["POST"])
 def api_open_folder():
@@ -781,7 +833,12 @@ def api_calendar_restore():
 @app.route("/api/settings", methods=["GET", "POST"])
 def api_settings():
     if request.method == "POST":
-        data = request.json or {}
+        data = dict(request.json or {})
+        # A blank or masked token field must never wipe a working connection.
+        if "meta_access_token" in data:
+            value = str(data.get("meta_access_token") or "")
+            if not value.strip() or "\u2022" in value:
+                data.pop("meta_access_token", None)
         try:
             config_manager.update(**data)
             return jsonify({"success": True})
@@ -789,13 +846,23 @@ def api_settings():
             return jsonify({"success": False, "error": str(e)})
     else:
         cfg = config_manager.config
+        raw_token = (cfg.meta_access_token or "").strip()
+        masked_token = ("\u2022" * 12 + raw_token[-4:]) if len(raw_token) > 8 else ("\u2022" * 8 if raw_token else "")
+        health_info = meta_auth.health(check_connection=False)
         return jsonify({
             "brand_name": cfg.brand_name,
             "gemini_api_key": cfg.gemini_api_key,
             "gemini_model": cfg.gemini_model,
             "openai_api_key": cfg.openai_api_key,
             "openai_model": cfg.openai_model,
-            "meta_access_token": cfg.meta_access_token,
+            "meta_access_token": masked_token,
+            "meta_connected": health_info.get("connected"),
+            "meta_needs_reauth": cfg.meta_needs_reauth,
+            "meta_page_name": cfg.meta_page_name,
+            "meta_ig_username": cfg.meta_ig_username,
+            "meta_days_left": health_info.get("days_left"),
+            "facebook_page_id": cfg.facebook_page_id,
+            "instagram_account_id": cfg.instagram_account_id,
             "r2_account_id": getattr(cfg, "r2_account_id", ""),
             "r2_bucket_name": getattr(cfg, "r2_bucket_name", ""),
             "r2_access_key_id": getattr(cfg, "r2_access_key_id", ""),

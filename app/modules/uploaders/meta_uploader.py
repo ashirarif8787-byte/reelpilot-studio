@@ -6,15 +6,38 @@ status polling, and final publication, along with token-expiration detection.
 import os
 import time
 import json
+import functools
 import requests
 from typing import Tuple, Optional, Dict, Any, List
 from app.config import config_manager
+from app.modules import meta_auth
 from app.modules.uploaders.base_uploader import BaseUploader, TokenExpiredException
 from app.utils.logger import logger
 
 GRAPH_API_VERSION = "v19.0"
 GRAPH_API_BASE = f"https://graph.facebook.com/{GRAPH_API_VERSION}"
 RUP_LOAD_BASE = f"https://rupload.facebook.com/ig-video-upload"
+
+
+def recover_on_token_expiry(func):
+    """
+    Runs an upload; if Meta rejects the token mid-upload, rebuilds the Page token
+    from the stored long-lived Facebook login and retries the upload once.
+    Only when that also fails does the queue pause and ask for a reconnect.
+    """
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except TokenExpiredException as exc:
+            logger.warning(f"[MetaUploader] Token rejected: {exc}. Trying automatic repair...")
+            if not meta_auth.try_recover():
+                logger.critical("[MetaUploader] Automatic repair failed — reconnect Facebook once.")
+                raise
+            logger.info("[MetaUploader] Token repaired automatically. Retrying upload...")
+            self._refresh_config()
+            return func(self, *args, **kwargs)
+    return wrapper
 
 
 class MetaUploader(BaseUploader):
@@ -36,19 +59,28 @@ class MetaUploader(BaseUploader):
     def validate_credentials(self) -> Tuple[bool, str]:
         self._refresh_config()
         if not self.access_token or not self.ig_account_id:
-            return False, "Missing Meta Access Token or Instagram Account ID."
+            return False, "Facebook account is not connected yet. Press 'Connect with Facebook' once."
 
         url = f"{GRAPH_API_BASE}/me"
         params = {"access_token": self.access_token}
         try:
-            resp = requests.get(url, params=params, timeout=10)
-            data = resp.json()
+            data = requests.get(url, params=params, timeout=10).json()
             if "error" in data:
                 err = data["error"]
-                if err.get("code") in [190, 463, 467]:
-                    return False, f"Token Expired or Invalid: {err.get('message')}"
+                if meta_auth.is_token_error(data):
+                    if meta_auth.try_recover():
+                        self._refresh_config()
+                        retry = requests.get(url, params={"access_token": self.access_token}, timeout=10).json()
+                        if "error" not in retry:
+                            return True, "Facebook connection repaired automatically — no token needed."
+                    return False, (
+                        "Facebook login expired or was revoked ("
+                        f"{err.get('message')}). Press 'Reconnect' once to link the account again."
+                    )
                 return False, f"Meta API Error: {err.get('message')}"
-            return True, f"Connected to Meta Graph API (User/Page ID: {data.get('id', 'Unknown')})"
+            days = meta_auth.days_left(config_manager.config.meta_data_access_expires_at)
+            suffix = f" — {days} day(s) of Facebook permission left" if days is not None else ""
+            return True, f"Connected to Meta Graph API (User/Page ID: {data.get('id', 'Unknown')}){suffix}"
         except Exception as e:
             return False, f"Connection failed: {e}"
 
@@ -68,16 +100,16 @@ class MetaUploader(BaseUploader):
                 if pages:
                     return True, pages
 
-            known_page_id = self.fb_page_id or "800869286434757"
-            p_url = f"{GRAPH_API_BASE}/{known_page_id}"
-            p_resp = requests.get(p_url, params={
-                "access_token": token,
-                "fields": "id,name,access_token,instagram_business_account{id,username}"
-            }, timeout=10)
-            if p_resp.status_code == 200:
-                p_data = p_resp.json()
-                if "id" in p_data:
-                    return True, [p_data]
+            # No hardcoded Page fallback: only the Page this login actually owns.
+            if self.fb_page_id:
+                p_resp = requests.get(f"{GRAPH_API_BASE}/{self.fb_page_id}", params={
+                    "access_token": token,
+                    "fields": "id,name,access_token,instagram_business_account{id,username}"
+                }, timeout=10)
+                if p_resp.status_code == 200:
+                    p_data = p_resp.json()
+                    if "id" in p_data:
+                        return True, [p_data]
 
             return False, []
         except Exception as e:
@@ -100,13 +132,18 @@ class MetaUploader(BaseUploader):
                 ig = data.get("instagram_business_account")
                 if ig:
                     return True, ig
-            known_ig_id = self.ig_account_id or "17841423338066933"
-            return True, {"id": known_ig_id, "username": "official_janisperfume"}
+            if self.ig_account_id:
+                return True, {
+                    "id": self.ig_account_id,
+                    "username": config_manager.config.meta_ig_username or "",
+                }
+            return False, {}
         except Exception as e:
             logger.error(f"Error fetching instagram account: {e}")
             return False, {}
 
 
+    @recover_on_token_expiry
     def upload_reel(
         self,
         video_path: str,
@@ -213,6 +250,7 @@ class MetaUploader(BaseUploader):
             logger.error(f"[MetaUploader] Unexpected error during upload: {e}")
             return False, None, None, str(e)
 
+    @recover_on_token_expiry
     def upload_facebook_video(
         self,
         video_path: str,
@@ -261,10 +299,13 @@ class MetaUploader(BaseUploader):
             else:
                 err = data.get("error", {}).get("message", resp.text)
                 return False, None, None, f"Facebook publish error: {err}"
+        except TokenExpiredException:
+            raise
         except Exception as e:
             return False, None, None, str(e)
 
     
+    @recover_on_token_expiry
     def upload_facebook_photo(
         self,
         photo_path_or_url: str,
@@ -308,9 +349,12 @@ class MetaUploader(BaseUploader):
             else:
                 err = data.get("error", {}).get("message", resp.text)
                 return False, None, None, f"Facebook photo error: {err}"
+        except TokenExpiredException:
+            raise
         except Exception as e:
             return False, None, None, str(e)
 
+    @recover_on_token_expiry
     def upload_facebook_carousel(
         self,
         photo_paths_or_urls: List[str],
@@ -380,9 +424,12 @@ class MetaUploader(BaseUploader):
             else:
                 err = feed_data.get("error", {}).get("message", feed_resp.text)
                 return False, None, None, f"Facebook multi-photo post error: {err}"
+        except TokenExpiredException:
+            raise
         except Exception as e:
             return False, None, None, str(e)
 
+    @recover_on_token_expiry
     def upload_instagram_photo(
         self,
         photo_url: str,
@@ -441,9 +488,12 @@ class MetaUploader(BaseUploader):
             else:
                 err = pub_data.get("error", {}).get("message", pub_resp.text)
                 return False, None, None, f"Publish error: {err}"
+        except TokenExpiredException:
+            raise
         except Exception as e:
             return False, None, None, str(e)
 
+    @recover_on_token_expiry
     def upload_instagram_carousel(
         self,
         media_urls: List[str],
@@ -539,6 +589,8 @@ class MetaUploader(BaseUploader):
             else:
                 err = pub_data.get("error", {}).get("message", pub_resp.text)
                 return False, None, None, f"Publish error: {err}"
+        except TokenExpiredException:
+            raise
         except Exception as e:
             return False, None, None, str(e)
 
@@ -573,11 +625,10 @@ class MetaUploader(BaseUploader):
         return False
 
     def _check_for_token_expiration(self, data: Dict[str, Any]):
-        """Detects OAuth token expiration codes and raises TokenExpiredException."""
-        if "error" in data:
-            error = data["error"]
-            code = error.get("code")
-            subcode = error.get("error_subcode")
-            message = error.get("message", "")
-            if code in [190, 463, 467] or "access token" in message.lower() or "session has expired" in message.lower():
-                raise TokenExpiredException(f"Meta Access Token expired or revoked: {message} (Code: {code}, Subcode: {subcode})")
+        """Detects invalid/expired OAuth tokens (190, 463, 467, subcode 460) and raises."""
+        if meta_auth.is_token_error(data):
+            error = data.get("error", {})
+            raise TokenExpiredException(
+                f"Meta access token expired or revoked: {error.get('message')} "
+                f"(Code: {error.get('code')}, Subcode: {error.get('error_subcode')})"
+            )

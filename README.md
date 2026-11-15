@@ -116,15 +116,32 @@ python -m app.modules.caption_generator
 
 ## ⚙️ Official API Setup Guide
 
-### Meta Graph API (Instagram Reels):
-1. Create a Meta Developer App at [developers.facebook.com](https://developers.facebook.com).
-2. Connect an **Instagram Professional/Creator Account** linked to a **Facebook Page**.
-3. Generate a Long-Lived Access Token with permissions:
-   - `instagram_basic`
-   - `instagram_content_publish`
-   - `pages_show_list`
-   - `pages_read_engagement`
-4. Enter your **Meta Access Token** and **Instagram Account ID** in the GUI Settings panel.
+### Meta Graph API (Facebook Page + Instagram) — one-click connect
+
+No access token is ever copied or pasted by hand. A Meta token can never be
+permanent (Meta invalidates it on password change / app removal — error 190,
+subcode 460), so the app obtains and maintains it itself.
+
+1. Create a Meta Developer App at [developers.facebook.com](https://developers.facebook.com)
+   and connect an **Instagram Professional/Creator Account** to a **Facebook Page**.
+2. In the app dashboard open **Facebook Login → Settings** and add this exact URI to
+   **Valid OAuth Redirect URIs**:
+   `http://localhost:5000/auth/facebook/callback`
+3. Put the App ID and App Secret in `.env` once (never in code):
+   ```
+   META_APP_ID=...
+   META_APP_SECRET=...
+   ```
+4. Open the dashboard → **Settings → Connect with Facebook**. The app then does the
+   rest by itself: short-lived token → long-lived token → Page token + Page ID +
+   Instagram account ID, all stored automatically.
+5. From then on the connection repairs itself:
+   - every 6 hours, and whenever the dashboard opens, the Page token is verified;
+   - if Meta revokes it, a fresh Page token is rebuilt from the stored long-lived login;
+   - only if the login itself is gone does the UI show a single **Reconnect** button.
+
+To rotate the App Secret (recommended if it was ever committed to git):
+Meta dashboard → App Settings → Basic → **App Secret → Reset**, then update `.env`.
 
 ### TikTok Content Posting API:
 1. Register at [developers.tiktok.com](https://developers.tiktok.com).
