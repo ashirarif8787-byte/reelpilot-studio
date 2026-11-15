@@ -471,9 +471,11 @@ def fb_oauth_start():
 
 @app.route("/auth/facebook/callback")
 def fb_oauth_callback():
-    error = request.args.get("error_description") or request.args.get("error")
-    if error:
-        return redirect("/?meta_error=" + urllib.parse.quote(error))
+    fb_error = request.args.get("error_description") or request.args.get("error")
+    if fb_error:
+        code = request.args.get("error_code") or request.args.get("error_reason")
+        logger.warning(f"⚠️ [MetaAuth] Facebook returned an OAuth error: {fb_error} (code: {code})")
+        return redirect("/?meta_error=" + urllib.parse.quote(f"{fb_error} (code: {code})" if code else fb_error))
 
     expected_state = session.pop("fb_oauth_state", None)
     if not expected_state or request.args.get("state") != expected_state:
@@ -506,6 +508,9 @@ def fb_oauth_callback():
         return redirect("/?meta_connected=1")
     except Exception as exc:
         logger.error(f"[MetaAuth] Facebook login failed: {exc}")
+        from app.modules.meta_auth import MetaAuthError
+        if not isinstance(exc, MetaAuthError):
+            logger.error(f"[MetaAuth] Unexpected type: {type(exc).__name__}")
         return redirect("/?meta_error=" + urllib.parse.quote(str(exc)))
 
 

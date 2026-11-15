@@ -55,6 +55,30 @@ class MetaAuthError(Exception):
     """Raised when the Facebook login handshake or token exchange cannot complete."""
 
 
+def format_meta_error(payload: Dict[str, Any], fallback: str = "Facebook rejected the request") -> str:
+    """Meta error -> one readable line that keeps the code/subcode for debugging."""
+    err = (payload or {}).get("error") or {}
+    message = err.get("message") or (payload or {}).get("error_description") or fallback
+    bits = []
+    if err.get("code") is not None:
+        bits.append(f"code {err.get('code')}")
+    if err.get("error_subcode"):
+        bits.append(f"subcode {err.get('error_subcode')}")
+    if err.get("type"):
+        bits.append(str(err.get("type")))
+    return f"{message} ({', '.join(bits)})" if bits else str(message)
+
+
+TOKEN_SUBCODE_HINTS = {
+    458: "the app was removed from the account",
+    459: "the account needs a Facebook security check",
+    460: "the password changed or Facebook invalidated the session",
+    463: "the token expired",
+    464: "the Facebook account is unconfirmed",
+    467: "the token is invalid",
+}
+
+
 # ---------------------------------------------------------------------------
 # App credentials
 # ---------------------------------------------------------------------------
@@ -91,7 +115,11 @@ def resolve_redirect_uri(base_url: str = "") -> str:
     if not base_url:
         return ""
     # Keep localhost and 127.0.0.1 from fighting each other: Meta matches exactly.
-    return base_url.replace("127.0.0.1", "localhost").replace("0.0.0.0", "localhost")
+    url = base_url.replace("127.0.0.1", "localhost").replace("0.0.0.0", "localhost")
+    # Accept a bare origin too, so callers cannot print a half URL by mistake.
+    if urllib.parse.urlparse(url).path in ("", "/"):
+        url = url.rstrip("/") + "/auth/facebook/callback"
+    return url
 
 
 def new_state() -> str:
@@ -143,7 +171,7 @@ def exchange_code(code: str, redirect_uri: str) -> str:
         "code": code,
     }))
     if "access_token" not in data:
-        raise MetaAuthError(data.get("error", {}).get("message") or "Facebook did not return a token.")
+        raise MetaAuthError(format_meta_error(data, "Facebook did not return a token."))
     return data["access_token"]
 
 
@@ -158,7 +186,7 @@ def extend_to_long_lived(user_token: str) -> Tuple[str, int]:
         "fb_exchange_token": user_token,
     }))
     if "access_token" not in data:
-        raise MetaAuthError(data.get("error", {}).get("message") or "Could not extend the Facebook token.")
+        raise MetaAuthError(format_meta_error(data, "Could not extend the Facebook token."))
     return data["access_token"], int(data.get("expires_in") or 0)
 
 
@@ -176,7 +204,7 @@ def fetch_pages(user_token: str) -> List[Dict[str, Any]]:
             raise MetaAuthError(f"Network error while fetching Facebook Pages: {exc}")
         data = _json(resp)
         if "error" in data:
-            raise MetaAuthError(data["error"].get("message") or "Could not read Facebook Pages.")
+            raise MetaAuthError(format_meta_error(data, "Could not read Facebook Pages."))
         pages.extend(data.get("data") or [])
         url = (data.get("paging") or {}).get("next")
         params = {}  # the "next" URL already carries the query string
@@ -187,7 +215,7 @@ def fetch_page_identity(token: str) -> Dict[str, Any]:
     """For a Page token: which Page does it belong to?"""
     data = _json(_graph_get("me", {"access_token": token, "fields": "id,name"}))
     if "error" in data:
-        raise MetaAuthError(data["error"].get("message") or "Could not identify the Facebook Page.")
+        raise MetaAuthError(format_meta_error(data, "Could not identify the Facebook Page."))
     return data
 
 
@@ -298,7 +326,15 @@ def connect(user_token: str, preferred_page_id: str = "") -> Dict[str, Any]:
 
     info = token_info(user_token)
     if not info["is_valid"]:
-        raise MetaAuthError(info.get("error_message") or "Facebook rejected this token. Please connect again.")
+        hint = TOKEN_SUBCODE_HINTS.get(info.get("error_subcode") or 0)
+        raise MetaAuthError(
+            format_meta_error({"error": {
+                "message": info.get("error_message") or "Facebook rejected this token",
+                "code": info.get("error_code"),
+                "error_subcode": info.get("error_subcode"),
+            }}, "Facebook rejected this token")
+            + (f" — {hint}, press Connect again" if hint else "")
+        )
 
     cfg = _cfg()
     long_lived_user_token = ""
@@ -343,7 +379,11 @@ def connect(user_token: str, preferred_page_id: str = "") -> Dict[str, Any]:
     page_info = token_info(page_token)
     if not page_info.get("is_valid"):
         raise MetaAuthError(
-            page_info.get("error_message") or "The Facebook Page token could not be validated."
+            format_meta_error({"error": {
+                "message": page_info.get("error_message") or "The Facebook Page token could not be validated",
+                "code": page_info.get("error_code"),
+                "error_subcode": page_info.get("error_subcode"),
+            }})
         )
 
     ig_id = str((instagram or {}).get("id") or "")

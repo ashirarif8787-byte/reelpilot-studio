@@ -120,11 +120,133 @@ def publish_test_posts() -> int:
     return 0 if both else 1
 
 
+def _when(timestamp: int) -> str:
+    if not timestamp:
+        return "never"
+    return datetime.fromtimestamp(int(timestamp)).strftime("%Y-%m-%d %H:%M")
+
+
+KNOWN_ISSUES = [
+    (("url blocked", "redirect_uri", "redirect uri"),
+     "Redirect URI Meta mein registered nahi hai",
+     ["Meta Dashboard -> Facebook Login -> Settings -> Valid OAuth Redirect URIs",
+      "Bilkul wahi URL paste karein jo upar 'Redirect URI' line mein hai (http vs https, port, trailing slash sab match ho)",
+      "Save karke 1-2 minute wait karein, phir Connect dobara dabayein"]),
+    (("invalid scope", "invalid scopes"),
+     "App ke paas ye permission add nahi hai",
+     ["Meta Dashboard -> App Review -> Permissions and Features",
+      "pages_show_list, pages_manage_posts, pages_read_engagement, instagram_basic, instagram_content_publish add/request karein"]),
+    (("development mode", "not available for this app", "app not active", "app is in development"),
+     "App Development mode mein hai",
+     ["Meta Dashboard -> App Mode -> 'Live' karein, ya",
+      "App Roles mein apna Facebook account Admin/Tester ke tor par add karein"]),
+    (("session has been invalidated", "code 190", "subcode 460", "code 463", "code 467"),
+     "Token Meta ne invalidate kar diya (password change / security / app removed)",
+     ["Settings -> Connect with Facebook dobara dabayein",
+      "Iske baad app khud token alive rakhta hai, manual token ki zaroorat nahi"]),
+    (("does not have permission", "code 200", "code 10", "permission"),
+     "Account ke paas Page/Instagram par required role nahi",
+     ["Facebook Page -> Settings -> Page Roles: apna account Admin hona chahiye",
+      "Instagram account Professional (Business/Creator) ho aur usi Page se linked ho"]),
+    (("instagram",), "Instagram account Page se link nahi mila",
+     ["Instagram app -> Settings -> Account type: Professional",
+      "Instagram ko Facebook Page se link karein (Page Settings -> Linked accounts)"]),
+    (("code 100", "invalid parameter"),
+     "Meta ne request parameter reject kiya",
+     ["Aam tor par redirect_uri mismatch ya purana token hota hai",
+      "Connect dobara karein; phir bhi aaye to poora error message bhejein"]),
+]
+
+
+def diagnose() -> int:
+    """Print exactly what the app will send to Meta and decode the last error."""
+    from app.modules.meta_auth import (
+        DEFAULT_SCOPES, TOKEN_SUBCODE_HINTS, app_id, app_secret,
+        resolve_redirect_uri, token_info,
+    )
+
+    cfg = config_manager.config
+    aid, secret = app_id(), app_secret()
+    masked_id = (aid[:4] + "*" * 6 + aid[-2:]) if len(aid) > 8 else ("set" if aid else "MISSING")
+    redirect_uri = resolve_redirect_uri("http://localhost:5000")
+
+    print("=" * 68)
+    print(" FACEBOOK LOGIN DIAGNOSTICS")
+    print("=" * 68)
+    print(f"  App ID ............... {masked_id}")
+    print(f"  App Secret ........... {'set' if secret else 'MISSING  <- .env mein META_APP_SECRET daalein'}")
+    print(f"  Redirect URI ......... {redirect_uri}")
+    print("     ^ Meta Dashboard -> Facebook Login -> Settings -> Valid OAuth Redirect URIs")
+    print("       mein bilkul yehi URL hona chahiye (http/https, port, slash sab match)")
+    print(f"  Required permissions . {', '.join(DEFAULT_SCOPES)}")
+
+    token = (cfg.meta_access_token or "").strip()
+    info = {}
+    if not token:
+        print("  Stored token ......... none (abhi connect nahi hua)")
+    else:
+        info = token_info(token)
+        print(f"  Token type ........... {info.get('type') or '-'}")
+        print(f"  Token valid .......... {info.get('is_valid')}")
+        print(f"  Time expiry .......... {'never (Page token)' if not info.get('expires_at') else _when(info.get('expires_at'))}")
+        data_access = info.get("data_access_expires_at") or 0
+        expiry_text = f"{_when(data_access)} ({meta_auth.days_left(data_access)} day(s))" if data_access else "no fixed expiry"
+        print(f"  Permission expiry .... {expiry_text}")
+        missing = [s for s in DEFAULT_SCOPES if s not in (info.get("scopes") or [])]
+        print(f"  Missing permissions .. {', '.join(missing) if missing else 'none'}")
+        if not info.get("is_valid"):
+            hint = TOKEN_SUBCODE_HINTS.get(info.get("error_subcode") or 0, "")
+            print(f"  Meta says ............ {info.get('error_message')} "
+                  f"(code {info.get('error_code')}, subcode {info.get('error_subcode')})")
+            if hint:
+                print(f"                         -> {hint}")
+
+    print(f"  Facebook Page ID ..... {cfg.facebook_page_id or '-'}")
+    print(f"  Instagram ID ......... {cfg.instagram_account_id or '-'}")
+    print(f"  Reconnect needed ..... {cfg.meta_needs_reauth}")
+    print(f"  Last Meta error ...... {cfg.meta_last_error or 'none recorded'}")
+
+    haystack = " ".join(str(x or "").lower() for x in (
+        cfg.meta_last_error,
+        info.get("error_message"),
+        f"code {info.get('error_code')}" if info.get("error_code") else "",
+        f"subcode {info.get('error_subcode')}" if info.get("error_subcode") else "",
+    ))
+    matches = [(title, fixes) for needles, title, fixes in KNOWN_ISSUES
+               if any(n in haystack for n in needles)]
+
+    if matches:
+        print("\n  LIKELY CAUSE + FIX")
+        for index, (title, fixes) in enumerate(matches, 1):
+            print(f"\n  {index}. {title}")
+            for step in fixes:
+                print(f"     - {step}")
+    else:
+        print("\n  (Koi recorded Meta error nahi — Connect dabayein, phir ye command dobara chalayein)")
+
+    print("\n  CHECKLIST (in order)")
+    for line in (
+        "1. Browser mein facebook.com par logged-in ho (sahi account)",
+        "2. App Live mode mein ho, ya aap Admin/Tester ho",
+        f"3. Ye URI Meta mein whitelisted ho: {redirect_uri}",
+        "4. Page par aapka account Admin ho, Instagram Page se linked + Professional ho",
+        "5. Settings -> Connect with Facebook dabayein",
+        "6. Phir: python verify_meta_live.py --diagnose",
+    ):
+        print(f"     {line}")
+    print()
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Check the Facebook/Instagram connection and optionally publish a test post.")
     parser.add_argument("--post", action="store_true", help="publish one test post to the Facebook Page and Instagram")
     parser.add_argument("--yes", action="store_true", help="skip the confirmation prompt for --post")
+    parser.add_argument("--diagnose", action="store_true", help="show app/token/redirect-URI diagnostics and decode the last Meta error")
     args = parser.parse_args()
+
+    if args.diagnose:
+        return diagnose()
 
     state = show_health()
 
