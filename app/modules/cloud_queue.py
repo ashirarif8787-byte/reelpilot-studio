@@ -22,6 +22,9 @@ class CloudQueueManager:
         self.path = GITHUB_PATH
         # Never hardcode a token in source: read it from the environment only.
         self.token = os.environ.get("GITHUB_TOKEN", "").strip()
+        # Without a token there is nothing to talk to: stay on the local queue
+        # instead of hammering the API and logging 401s on every page load.
+        self.enabled = bool(self.token)
 
     def _get_headers(self) -> Dict[str, str]:
         return {
@@ -30,8 +33,20 @@ class CloudQueueManager:
             "User-Agent": "ReelPilot-Studio-Cloud-Queue"
         }
 
+    def _local_queue(self) -> Dict[str, Any]:
+        local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "queue.json")
+        if os.path.exists(local_path):
+            try:
+                with open(local_path, "r", encoding="utf-8") as f:
+                    return {"success": True, "sha": None, "data": json.load(f)}
+            except Exception:
+                pass
+        return {"success": True, "sha": None, "data": {"scheduled": [], "history": []}}
+
     def fetch_queue(self) -> Dict[str, Any]:
         """Fetches the queue JSON and its git blob SHA from GitHub."""
+        if not self.enabled:
+            return self._local_queue()
         try:
             url = f"https://api.github.com/repos/{self.repo}/contents/{self.path}"
             resp = requests.get(url, headers=self._get_headers(), timeout=10)
@@ -51,17 +66,12 @@ class CloudQueueManager:
             logger.error(f"[CloudQueue] Error fetching queue from GitHub: {e}")
 
         # Local fallback if GitHub unreachable
-        local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "queue.json")
-        if os.path.exists(local_path):
-            try:
-                with open(local_path, "r", encoding="utf-8") as f:
-                    return {"success": True, "sha": None, "data": json.load(f)}
-            except Exception:
-                pass
-        return {"success": False, "sha": None, "data": {"scheduled": [], "history": []}}
+        return self._local_queue()
 
     def save_queue(self, queue_data: Dict[str, Any], sha: Optional[str] = None) -> bool:
         """Saves updated queue JSON to GitHub with a commit."""
+        if not self.enabled:
+            return False
         try:
             json_str = json.dumps(queue_data, indent=2, ensure_ascii=False)
             content_b64 = base64.b64encode(json_str.encode("utf-8")).decode("utf-8")
