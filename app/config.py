@@ -41,7 +41,7 @@ CONFIG_PATH = os.path.join(PROJECT_ROOT, "config.json")
 class AppConfig:
     # AI Credentials (Gemini & OpenAI)
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-1.5-flash"
+    gemini_model: str = "gemini-flash-lite-latest"
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
     ai_engine: str = "auto"  # "auto", "gemini", "openai"
@@ -178,6 +178,17 @@ class ConfigManager:
             cfg.meta_app_id = os.getenv("META_APP_ID", PERMANENT_APP_ID)
         if not cfg.meta_app_secret:
             cfg.meta_app_secret = os.getenv("META_APP_SECRET", PERMANENT_APP_SECRET)
+
+        # AI keys ship as environment variables on hosted deployments, so the
+        # serverless filesystem never has to hold a secret.
+        if not cfg.gemini_api_key:
+            cfg.gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+        if not cfg.openai_api_key:
+            cfg.openai_api_key = os.getenv("OPENAI_API_KEY", "")
+        if os.getenv("GEMINI_MODEL"):
+            cfg.gemini_model = os.getenv("GEMINI_MODEL")
+        if os.getenv("OPENAI_MODEL"):
+            cfg.openai_model = os.getenv("OPENAI_MODEL")
 
         # Older profiles only have the single Page fields: expose them as a list.
         if not cfg.meta_pages and cfg.facebook_page_id:

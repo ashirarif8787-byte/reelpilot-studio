@@ -189,7 +189,7 @@ class DualAICaptionGenerator:
     ) -> Tuple[str, str, Optional[str]]:
         """Calls Google Gemini 1.5/2.0 Flash Vision API directly via REST."""
         api_key = config_manager.config.gemini_api_key.strip()
-        model = config_manager.config.gemini_model or "gemini-1.5-flash"
+        model = config_manager.config.gemini_model or "gemini-flash-latest"
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
         prompt = (
@@ -222,7 +222,7 @@ class DualAICaptionGenerator:
             "generationConfig": {"temperature": 0.95, "topP": 0.95, "maxOutputTokens": 500}
         }
 
-        resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=20)
+        resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=(10, 75))
         data = resp.json()
 
         if "error" in data:
@@ -279,7 +279,7 @@ class DualAICaptionGenerator:
             "Content-Type": "application/json"
         }
 
-        resp = requests.post(url, json=payload, headers=headers, timeout=20)
+        resp = requests.post(url, json=payload, headers=headers, timeout=(10, 75))
         data = resp.json()
 
         if "error" in data:
@@ -394,12 +394,12 @@ class DualAICaptionGenerator:
         # 1. Try Gemini
         if gemini_key:
             try:
-                model = config_manager.config.gemini_model or "gemini-1.5-flash"
+                model = config_manager.config.gemini_model or "gemini-flash-latest"
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
                 parts = [{"text": prompt}]
                 if b64_img:
                     parts.append({"inline_data": {"mime_type": mime_type, "data": b64_img}})
-                resp = requests.post(url, json={"contents": [{"parts": parts}], "generationConfig": {"temperature": 0.95, "topP": 0.95, "maxOutputTokens": 600}}, timeout=20)
+                resp = requests.post(url, json={"contents": [{"parts": parts}], "generationConfig": {"temperature": 0.95, "topP": 0.95, "maxOutputTokens": 600}}, timeout=(10, 75))
                 data = resp.json()
                 if "candidates" in data and data["candidates"]:
                     raw_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
@@ -417,7 +417,7 @@ class DualAICaptionGenerator:
                 parts = [{"type": "text", "text": prompt}]
                 if b64_img:
                     parts.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}})
-                resp = requests.post(url, json={"model": model, "messages": [{"role": "user", "content": parts}], "max_tokens": 600, "temperature": 0.95, "top_p": 0.95}, headers={"Authorization": f"Bearer {openai_key}"}, timeout=20)
+                resp = requests.post(url, json={"model": model, "messages": [{"role": "user", "content": parts}], "max_tokens": 600, "temperature": 0.95, "top_p": 0.95}, headers={"Authorization": f"Bearer {openai_key}"}, timeout=(10, 75))
                 data = resp.json()
                 if "choices" in data and data["choices"]:
                     raw_text = data["choices"][0]["message"]["content"].strip()
