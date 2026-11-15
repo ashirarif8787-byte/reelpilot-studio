@@ -1,6 +1,6 @@
 import os
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from typing import Optional
 from pathlib import Path
 
@@ -67,6 +67,9 @@ class AppConfig:
     meta_connected_at: str = ""
     meta_needs_reauth: bool = False
     meta_last_error: str = ""
+    # Every Facebook Page this login can publish to, each with its own Instagram account.
+    # [{"page_id", "page_name", "page_token", "ig_id", "ig_username"}]
+    meta_pages: list = field(default_factory=list)
     
     tiktok_client_key: str = ""
     tiktok_client_secret: str = ""
@@ -149,6 +152,18 @@ class ConfigManager:
                 print(f"[ConfigManager] Error reading config: {e}. Falling back to defaults.")
         
         cfg = AppConfig(**{k: v for k, v in data.items() if hasattr(AppConfig, k)})
+
+        # Serverless hosts have an ephemeral filesystem: restore the Facebook
+        # connection from durable storage so it survives cold starts.
+        if os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"):
+            try:
+                from app.modules import remote_store
+                stored = remote_store.load_meta()
+                for key, value in (stored or {}).items():
+                    if hasattr(cfg, key) and value not in (None, ""):
+                        setattr(cfg, key, value)
+            except Exception as e:
+                print(f"[ConfigManager] Remote state unavailable: {e}")
         
         # Ensure permanent token is preserved
         if not cfg.meta_access_token:
@@ -163,6 +178,16 @@ class ConfigManager:
             cfg.meta_app_id = os.getenv("META_APP_ID", PERMANENT_APP_ID)
         if not cfg.meta_app_secret:
             cfg.meta_app_secret = os.getenv("META_APP_SECRET", PERMANENT_APP_SECRET)
+
+        # Older profiles only have the single Page fields: expose them as a list.
+        if not cfg.meta_pages and cfg.facebook_page_id:
+            cfg.meta_pages = [{
+                "page_id": str(cfg.facebook_page_id),
+                "page_name": cfg.meta_page_name or "",
+                "page_token": cfg.meta_access_token or "",
+                "ig_id": str(cfg.instagram_account_id or ""),
+                "ig_username": cfg.meta_ig_username or "",
+            }]
 
         if not os.path.exists(self.config_file):
             self.save(cfg)

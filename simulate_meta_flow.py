@@ -67,6 +67,11 @@ class FakeMetaAPI:
         self.page_name = "JANI's Perfume"
         self.ig_id = "17841423338066933"
         self.ig_username = "official_janisperfume"
+        # Second Page, also with its own linked Instagram account
+        self.page2_id = "111222333444555"
+        self.page2_name = "JANI's Fragrance World"
+        self.ig2_id = "17841400000000002"
+        self.ig2_username = "janis.fragrance"
         self.calls = []
 
     @staticmethod
@@ -116,12 +121,20 @@ class FakeMetaAPI:
         if path == "me/accounts":
             if not self.user_token_valid or p.get("access_token") != self.long_token:
                 return FakeResponse(self.error())
-            return FakeResponse({"data": [{
-                "id": self.page_id,
-                "name": self.page_name,
-                "access_token": self.page_token,
-                "instagram_business_account": {"id": self.ig_id, "username": self.ig_username},
-            }]})
+            return FakeResponse({"data": [
+                {
+                    "id": self.page_id,
+                    "name": self.page_name,
+                    "access_token": self.page_token,
+                    "instagram_business_account": {"id": self.ig_id, "username": self.ig_username},
+                },
+                {
+                    "id": self.page2_id,
+                    "name": self.page2_name,
+                    "access_token": self.page_token + "_B",
+                    "instagram_business_account": {"id": self.ig2_id, "username": self.ig2_username},
+                },
+            ]})
         if path == "me":
             if str(p.get("access_token", "")).startswith("SIM_PAGE_TOKEN") and not self._page_token_ok(p.get("access_token")):
                 return FakeResponse(self.error())
@@ -191,6 +204,21 @@ def main():
         check("Page + Instagram names stored",
               (cfg.meta_page_name, cfg.meta_ig_username) == (fake.page_name, fake.ig_username))
         check("reconnect flag cleared", cfg.meta_needs_reauth is False)
+
+        check("all Pages discovered with their own Instagram account",
+              len(cfg.meta_pages) == 2
+              and {p["page_id"] for p in cfg.meta_pages} == {fake.page_id, fake.page2_id}
+              and all(p["ig_id"] for p in cfg.meta_pages),
+              str(cfg.meta_pages))
+        active = meta_auth.activate_page(fake.page2_id)
+        check("switching the active Page switches Page + Instagram together",
+              config_manager.config.facebook_page_id == fake.page2_id
+              and config_manager.config.instagram_account_id == fake.ig2_id
+              and active.get("ig_username") == fake.ig2_username)
+        meta_auth.activate_page(fake.page_id)
+        check("switching back restores the first Page",
+              config_manager.config.facebook_page_id == fake.page_id
+              and config_manager.config.instagram_account_id == fake.ig_id)
 
         order = [(m, p) for m, p, _ in fake.calls]
         idx_exchange = next(i for i, (m, p, prm) in enumerate(fake.calls)

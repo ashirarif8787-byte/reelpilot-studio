@@ -534,6 +534,56 @@ def api_accounts_health():
     data["app_configured"] = meta_auth.is_configured()
     return jsonify(data)
 
+@app.route("/api/meta/pages")
+def api_meta_pages():
+    cfg = config_manager.config
+    return jsonify({
+        "success": True,
+        "pages": meta_auth.pages_list(),
+        "active_page_id": cfg.facebook_page_id or "",
+        "connected": bool(cfg.meta_access_token),
+        "needs_reauth": bool(cfg.meta_needs_reauth),
+    })
+
+
+@app.route("/api/meta/pages/activate", methods=["POST"])
+def api_meta_pages_activate():
+    data = request.json or {}
+    page_id = str(data.get("page_id") or "").strip()
+    try:
+        record = meta_auth.activate_page(page_id)
+        acc = load_accounts()
+        acc["facebook"] = {
+            "connected": True,
+            "page_name": record.get("page_name") or "",
+            "page_id": page_id,
+            "auth_type": "meta_oauth",
+        }
+        acc["instagram"] = {
+            "connected": bool(record.get("ig_id")),
+            "username": record.get("ig_username") or "Not Connected",
+            "id": record.get("ig_id") or "",
+            "auth_type": "meta_oauth",
+        }
+        save_accounts(acc)
+        return jsonify({"success": True, "pages": meta_auth.pages_list()})
+    except Exception as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+
+
+@app.route("/api/meta/pages/refresh", methods=["POST"])
+def api_meta_pages_refresh():
+    try:
+        summary = meta_auth.refresh_pages()
+        return jsonify({
+            "success": True,
+            "page_count": summary.get("page_count", 0),
+            "pages": meta_auth.pages_list(),
+        })
+    except Exception as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+
+
 @app.route("/api/ai/generate-luxury-copy", methods=["POST"])
 def api_ai_generate_luxury_copy():
     data = request.json or {}
@@ -851,8 +901,6 @@ def api_settings():
             return jsonify({"success": False, "error": str(e)})
     else:
         cfg = config_manager.config
-        raw_token = (cfg.meta_access_token or "").strip()
-        masked_token = ("\u2022" * 12 + raw_token[-4:]) if len(raw_token) > 8 else ("\u2022" * 8 if raw_token else "")
         health_info = meta_auth.health(check_connection=False)
         return jsonify({
             "brand_name": cfg.brand_name,
@@ -860,7 +908,6 @@ def api_settings():
             "gemini_model": cfg.gemini_model,
             "openai_api_key": cfg.openai_api_key,
             "openai_model": cfg.openai_model,
-            "meta_access_token": masked_token,
             "meta_connected": health_info.get("connected"),
             "meta_needs_reauth": cfg.meta_needs_reauth,
             "meta_page_name": cfg.meta_page_name,
@@ -868,6 +915,8 @@ def api_settings():
             "meta_days_left": health_info.get("days_left"),
             "facebook_page_id": cfg.facebook_page_id,
             "instagram_account_id": cfg.instagram_account_id,
+            "meta_pages": meta_auth.pages_list(),
+            "active_page_id": cfg.facebook_page_id or "",
             "r2_account_id": getattr(cfg, "r2_account_id", ""),
             "r2_bucket_name": getattr(cfg, "r2_bucket_name", ""),
             "r2_access_key_id": getattr(cfg, "r2_access_key_id", ""),

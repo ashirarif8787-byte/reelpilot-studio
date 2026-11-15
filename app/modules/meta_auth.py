@@ -290,6 +290,7 @@ def _mark_needs_reauth(message: str) -> None:
         meta_last_error=(message or "")[:500],
     )
     clear_health_cache()
+    _persist_remote()
     logger.warning(f"[MetaAuth] Reconnect required: {message}")
 
 
@@ -340,6 +341,7 @@ def connect(user_token: str, preferred_page_id: str = "") -> Dict[str, Any]:
     long_lived_user_token = ""
     user_expires_at = info["expires_at"]
     data_access_expires_at = info["data_access_expires_at"]
+    candidate_pages: List[Dict[str, Any]] = []
 
     if info["type"] == "PAGE":
         # A Page token pasted directly: it is already the publishing credential.
@@ -366,6 +368,7 @@ def connect(user_token: str, preferred_page_id: str = "") -> Dict[str, Any]:
 
         # 2) long-lived user token -> Page token (has no expiry of its own)
         pages = fetch_pages(long_lived_user_token)
+        candidate_pages = pages
         page = _pick_page(pages, preferred_page_id or cfg.facebook_page_id, cfg.brand_name)
         if not page:
             raise MetaAuthError(
@@ -389,6 +392,35 @@ def connect(user_token: str, preferred_page_id: str = "") -> Dict[str, Any]:
     ig_id = str((instagram or {}).get("id") or "")
     ig_username = (instagram or {}).get("username") or ""
 
+    # Every Page this login can publish to, each with the Instagram account that
+    # is actually linked to it. A Page without Instagram stays publishable to Facebook.
+    records: List[Dict[str, Any]] = []
+    source_pages = candidate_pages or [{
+        "id": page_id,
+        "name": page_name,
+        "access_token": page_token,
+        "instagram_business_account": instagram,
+    }]
+    for candidate in source_pages:
+        record_page_id = str(candidate.get("id") or "")
+        if not record_page_id:
+            continue
+        record_token = candidate.get("access_token") or page_token
+        record_ig = candidate.get("instagram_business_account") or {}
+        if not record_ig and record_page_id != page_id:
+            try:
+                record_ig = fetch_instagram(record_page_id, record_token)
+            except Exception as exc:
+                logger.warning(f"[MetaAuth] Instagram lookup skipped for Page {record_page_id}: {exc}")
+                record_ig = {}
+        records.append({
+            "page_id": record_page_id,
+            "page_name": candidate.get("name") or "",
+            "page_token": record_token,
+            "ig_id": str((record_ig or {}).get("id") or ""),
+            "ig_username": (record_ig or {}).get("username") or "",
+        })
+
     config_manager.update(
         meta_access_token=page_token,
         meta_user_token=long_lived_user_token,
@@ -401,16 +433,18 @@ def connect(user_token: str, preferred_page_id: str = "") -> Dict[str, Any]:
         instagram_account_id=ig_id,
         meta_page_name=page_name,
         meta_ig_username=ig_username,
+        meta_pages=records,
         meta_connected_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         meta_needs_reauth=False,
         meta_last_error="",
     )
 
     clear_health_cache()
+    _persist_remote()
     logger.info(
         f"✅ [MetaAuth] Connected Page '{page_name}' ({page_id})"
         + (f" + Instagram @{ig_username}" if ig_username else "")
-        + ". Long-lived login stored for automatic recovery."
+        + f". {len(records)} Page(s) available. Long-lived login stored for automatic recovery."
     )
     return {
         "page_id": page_id,
@@ -420,7 +454,74 @@ def connect(user_token: str, preferred_page_id: str = "") -> Dict[str, Any]:
         "user_token_expires_at": user_expires_at or 0,
         "data_access_expires_at": data_access_expires_at or 0,
         "page_token_expires_at": page_info.get("expires_at") or 0,
+        "pages": records,
+        "page_count": len(records),
     }
+
+
+def _persist_remote() -> None:
+    """Mirror the connection to durable storage on serverless hosts."""
+    try:
+        from app.modules.remote_store import save_meta
+        save_meta(config_manager.config)
+    except Exception as exc:
+        logger.warning(f"[MetaAuth] Durable state unavailable: {exc}")
+
+
+def pages_list() -> List[Dict[str, Any]]:
+    """Connected Pages for the UI, with the active one flagged."""
+    cfg = _cfg()
+    active = str(cfg.facebook_page_id or "")
+    out: List[Dict[str, Any]] = []
+    for record in (cfg.meta_pages or []):
+        page_id = str(record.get("page_id") or "")
+        out.append({
+            "page_id": page_id,
+            "page_name": record.get("page_name") or "",
+            "ig_id": record.get("ig_id") or "",
+            "ig_username": record.get("ig_username") or "",
+            "has_instagram": bool(record.get("ig_id")),
+            "active": page_id == active,
+        })
+    return out
+
+
+def activate_page(page_id: str) -> Dict[str, Any]:
+    """Switch publishing to another connected Page (and its Instagram account)."""
+    page_id = str(page_id or "").strip()
+    cfg = _cfg()
+    for record in (cfg.meta_pages or []):
+        if str(record.get("page_id")) == page_id:
+            config_manager.update(
+                facebook_page_id=page_id,
+                instagram_account_id=record.get("ig_id") or "",
+                meta_page_name=record.get("page_name") or "",
+                meta_ig_username=record.get("ig_username") or "",
+                meta_access_token=record.get("page_token") or cfg.meta_access_token,
+                meta_needs_reauth=False,
+                meta_last_error="",
+            )
+            clear_health_cache()
+            _persist_remote()
+            logger.info(f"[MetaAuth] Active Page switched to '{record.get('page_name')}' ({page_id}).")
+            return dict(record, active=True)
+    raise MetaAuthError(
+        f"Page {page_id} is not in the connected list. Connect with Facebook again or refresh the Pages."
+    )
+
+
+def refresh_pages() -> Dict[str, Any]:
+    """Re-read every Page + Instagram account from Meta using the stored login."""
+    cfg = _cfg()
+    user_token = (cfg.meta_user_token or "").strip()
+    if not user_token:
+        raise MetaAuthError("No Facebook login stored. Press 'Connect with Facebook' once.")
+    info = token_info(user_token)
+    if not info["is_valid"]:
+        raise MetaAuthError("The stored Facebook login is no longer valid. Press 'Reconnect'.")
+    summary = connect(user_token, preferred_page_id=cfg.facebook_page_id)
+    logger.info(f"[MetaAuth] Page list refreshed: {summary.get('page_count', 0)} Page(s).")
+    return summary
 
 
 def try_recover() -> bool:
@@ -491,6 +592,8 @@ def _empty_health(message: str, needs_reauth: bool = True) -> Dict[str, Any]:
             "id": cfg.instagram_account_id or "",
         },
         "app_configured": is_configured(),
+        "pages": pages_list(),
+        "active_page_id": cfg.facebook_page_id or "",
     }
 
 
@@ -568,6 +671,8 @@ def _health_uncached(check_connection: bool = True) -> Dict[str, Any]:
                 "id": cfg.instagram_account_id or "",
             },
             "app_configured": is_configured(),
+            "pages": pages_list(),
+            "active_page_id": cfg.facebook_page_id or "",
         }
 
     # No verification requested: report what is stored.
@@ -593,4 +698,6 @@ def _health_uncached(check_connection: bool = True) -> Dict[str, Any]:
             "id": cfg.instagram_account_id or "",
         },
         "app_configured": is_configured(),
+        "pages": pages_list(),
+        "active_page_id": cfg.facebook_page_id or "",
     }

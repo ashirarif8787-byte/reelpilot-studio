@@ -855,6 +855,20 @@ STUDIO_HTML = """<!DOCTYPE html>
                                 Ek click — Page aur Instagram khud connect ho jate hain. Token paste karne ki zaroorat nahi.
                             </small>
                         </div>
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div class="fw-bold text-white small"><i class="fa-solid fa-layer-group text-warning me-1"></i>My Pages</div>
+                                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-0" style="font-size:0.7rem;" onclick="refreshMetaPages()">
+                                    <i class="fa-solid fa-rotate me-1"></i>Refresh
+                                </button>
+                            </div>
+                            <div id="meta-pages-list" class="d-flex flex-column gap-1">
+                                <small class="text-white-50">Connect with Facebook dabayein - aapke saare Pages yahan aa jayenge.</small>
+                            </div>
+                            <small class="text-white-50 d-block mt-1" style="font-size:0.68rem;">
+                                Jis Page ke sath Instagram connected hai wo yahan khud dikhta hai. Jo Page <strong>Active</strong> hai, usi par post/video jayega.
+                            </small>
+                        </div>
                         <div class="mt-2 text-white-50" style="font-size: 0.7rem;">
                             <i class="fa-solid fa-circle-info me-1"></i>Meta Dashboard &rarr; Facebook Login &rarr; Settings &rarr; Valid OAuth Redirect URIs mein ye URL add karein:
                             <code id="setting-redirect-uri" class="text-warning">/auth/facebook/callback</code>
@@ -1629,6 +1643,7 @@ STUDIO_HTML = """<!DOCTYPE html>
                     if (data.meta_days_left !== null && data.meta_days_left !== undefined) {
                         document.getElementById('setting-conn-note').innerText = `${data.meta_days_left} din ki permission baqi — expiry se pehle khud refresh ho jati hai.`;
                     }
+                    renderMetaPages(data.meta_pages || []);
                 }
             } catch (e) {}
             try {
@@ -1644,6 +1659,63 @@ STUDIO_HTML = """<!DOCTYPE html>
                 if (health.redirect_uri) document.getElementById('setting-redirect-uri').innerText = health.redirect_uri;
             } catch (e) {}
             settingsModal.show();
+        }
+
+        // --- CONNECTED PAGES (multi-page) ---
+        function renderMetaPages(pages) {
+            const box = document.getElementById('meta-pages-list');
+            if (!box) return;
+            if (!pages || !pages.length) {
+                box.innerHTML = '<small class="text-white-50">Koi Page loaded nahi. "Connect with Facebook" dabayein.</small>';
+                return;
+            }
+            box.innerHTML = pages.map(p => {
+                const ig = p.has_instagram
+                    ? `<span class="text-danger"><i class="fa-brands fa-instagram me-1"></i>@${p.ig_username}</span>`
+                    : '<span class="text-white-50">Instagram not linked</span>';
+                const state = p.active
+                    ? '<span class="badge bg-success">Active</span>'
+                    : `<button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-0" style="font-size:0.7rem;" onclick="activatePage('${p.page_id}')">Use</button>`;
+                return `<div class="d-flex justify-content-between align-items-center bg-dark bg-opacity-75 rounded-3 border border-secondary border-opacity-50 px-2 py-1">
+                    <div style="min-width:0;">
+                        <div class="text-white small text-truncate"><i class="fa-brands fa-facebook text-primary me-1"></i>${p.page_name || p.page_id}</div>
+                        <div style="font-size:0.7rem;">${ig}</div>
+                    </div>
+                    <div class="ms-2">${state}</div>
+                </div>`;
+            }).join('');
+        }
+
+        async function activatePage(pageId) {
+            try {
+                const res = await fetch('/api/meta/pages/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ page_id: pageId })
+                });
+                const d = await res.json();
+                if (d.success) {
+                    renderMetaPages(d.pages);
+                    showToast("Active Page switch ho gaya! Ab posts isi Page par jayengi.");
+                    checkLiveHealth(true);
+                } else {
+                    showToast(d.error || "Page switch failed", "error");
+                }
+            } catch (e) { showToast("Page switch error: " + e, "error"); }
+        }
+
+        async function refreshMetaPages() {
+            showToast("Meta se Pages load ho rahe hain...", "warning");
+            try {
+                const res = await fetch('/api/meta/pages/refresh', { method: 'POST' });
+                const d = await res.json();
+                if (d.success) {
+                    renderMetaPages(d.pages);
+                    showToast(`${d.page_count} Page(s) loaded - Instagram linked accounts bhi update ho gaye.`);
+                } else {
+                    showToast(d.error || "Pages refresh failed", "error");
+                }
+            } catch (e) { showToast("Pages refresh error: " + e, "error"); }
         }
 
         async function saveStudioSettings() {

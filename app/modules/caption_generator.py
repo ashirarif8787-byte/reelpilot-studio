@@ -11,6 +11,7 @@ import os
 import re
 import json
 import base64
+import random
 import subprocess
 import requests
 from io import BytesIO
@@ -31,6 +32,59 @@ FALLBACK_TAGS = {
 OFFICIAL_BRAND_FOOTER = """🌐 𝐖𝐞𝐛𝐬𝐢𝐭𝐞 𝐂𝐡𝐞𝐜𝐤𝐨𝐮𝐭: janisperfumes.com
 💬 𝐏𝐫𝐞𝐟𝐞𝐫 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩: 03134454899
 📩 𝐒𝐞𝐧𝐝 𝐮𝐬 𝐚 𝐃𝐌 𝐭𝐨 𝐨𝐫𝐝𝐞𝐫 𝐝𝐢𝐫𝐞𝐜𝐭𝐥𝐲!"""
+
+# Every generation picks a different creative direction so the feed never looks
+# templated. The model is told the angle explicitly and the temperature stays high.
+CREATIVE_ANGLES = [
+    "Sensory storytelling - describe how the scent unfolds on skin, hour by hour.",
+    "Status & confidence - the room-stopping presence of the wearer.",
+    "Gifting moment - the emotion of unboxing and gifting this bottle.",
+    "Craftsmanship - perfumer's artistry, rare ingredients, small-batch production.",
+    "Night-out ritual - the final touch before leaving, signature trail.",
+    "Seasonal mood - winter warmth / summer freshness tied to the notes.",
+    "Compliment magnet - social proof, people asking what you are wearing.",
+    "Quiet luxury - understated elegance, no shouting, pure class.",
+]
+
+HOOK_STYLES = [
+    "a curious one-line question",
+    "a bold statement with a luxury emoji",
+    "a micro-story opener (2-4 words + emoji)",
+    "a contrarian take about cheap perfumes",
+    "a sensory line about the first spray",
+    "a 'POV:' style opener",
+]
+
+LOCATION_TAGS = ["#PerfumesPakistan", "#KarachiPerfumes", "#LahoreShopping", "#PakistaniBrands", "#IslamabadFragrance"]
+VIRAL_TAGS = ["#ViralReels", "#ExplorePage", "#TrendingNow", "#ReelsInstagram", "#FYP", "#ScentOfTheDay", "#FragranceTok"]
+NICHE_TAGS = ["#LuxuryFragrance", "#LongLastingScent", "#OudLovers", "#EauDeParfum", "#FragranceCommunity", "#PerfumeCollector", "#BeastModeFragrance"]
+
+
+def _creative_brief() -> str:
+    """A fresh angle + hook style for every caption, so nothing repeats."""
+    return (
+        f"CREATIVE ANGLE for this post: {random.choice(CREATIVE_ANGLES)}\n"
+        f"HOOK STYLE: {random.choice(HOOK_STYLES)}\n"
+        f"Do NOT reuse wording, sentence order or emoji placement from typical perfume ads. "
+        f"Vary the rhythm and structure from any previous post."
+    )
+
+
+def _build_hashtags(clean_brand: str, clean_prod: str, clean_vol: str, count: int = 14) -> str:
+    """Brand + niche + location + viral mix, shuffled so every post differs."""
+    base = []
+    if clean_brand:
+        base.append(f"#{clean_brand}")
+    if clean_prod:
+        base.append(f"#{clean_prod}")
+    if clean_vol:
+        base.append(f"#{clean_vol}Perfume")
+    pool = list(dict.fromkeys(base + NICHE_TAGS + LOCATION_TAGS + VIRAL_TAGS))
+    fixed = base[:2]
+    rotating = [tag for tag in pool if tag not in fixed]
+    random.shuffle(rotating)
+    chosen = fixed + rotating[: max(0, count - len(fixed))]
+    return " ".join(chosen[:count])
 
 def append_brand_footer(caption: str) -> str:
     """Ensures official brand checkout & WhatsApp contact links are present in every caption."""
@@ -141,13 +195,17 @@ class DualAICaptionGenerator:
         prompt = (
             f"You are a viral social media growth copywriter and e-commerce expert for {platform.upper()}.\n"
             f"Brand Name: '{brand}'\n"
-            f"File context: '{filename_hint}'\n\n"
-            "Analyze this product/scene image carefully.\n"
+            f"File context: '{filename_hint}'\n"
+            f"{_creative_brief()}\n\n"
+            "Analyze the actual product/scene in this image: read the bottle shape, colour, packaging, "
+            "text on the label and the mood of the shot, then write copy that matches it.\n"
             "Format your answer EXACTLY as these 4 sections:\n"
-            "HOOK: [1 viral, high-retention curiosity hook with emoji]\n"
-            "DESCRIPTION: [1-2 sentence compelling product description highlighting aesthetics and benefits, ending with a Call-To-Action mentioning the brand name]\n"
+            "HOOK: [1 scroll-stopping hook in the requested hook style, with emoji]\n"
+            "DESCRIPTION: [2-3 sentences of high-end sensory copy describing what the viewer will feel/see, "
+            "then a direct call to action. Must sound premium, never cheap or spammy.]\n"
             "SOUND_VIBE: [Recommend a 2-word trending sound vibe, e.g. Upbeat Phonk, Luxury Lo-Fi, Energetic Trap, or Cinematic Beat]\n"
-            "HASHTAGS: [Exactly 6 to 8 trending hashtags directly relevant to this product and niche, starting with #]"
+            "HASHTAGS: [Exactly 12 to 14 hashtags starting with # : 3 brand/product tags, 4 niche fragrance tags, "
+            "3 Pakistan location tags, 4 viral reach tags. No duplicates.]"
         )
 
         parts = [{"text": prompt}]
@@ -161,7 +219,7 @@ class DualAICaptionGenerator:
 
         payload = {
             "contents": [{"parts": parts}],
-            "generationConfig": {"temperature": 0.75, "maxOutputTokens": 350}
+            "generationConfig": {"temperature": 0.95, "topP": 0.95, "maxOutputTokens": 500}
         }
 
         resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=20)
@@ -188,13 +246,17 @@ class DualAICaptionGenerator:
         prompt = (
             f"You are a viral social media growth copywriter and e-commerce expert for {platform.upper()}.\n"
             f"Brand Name: '{brand}'\n"
-            f"File context: '{filename_hint}'\n\n"
-            "Analyze this product/scene image carefully.\n"
+            f"File context: '{filename_hint}'\n"
+            f"{_creative_brief()}\n\n"
+            "Analyze the actual product/scene in this image: read the bottle shape, colour, packaging, "
+            "text on the label and the mood of the shot, then write copy that matches it.\n"
             "Format your answer EXACTLY as these 4 sections:\n"
-            "HOOK: [1 viral, high-retention curiosity hook with emoji]\n"
-            "DESCRIPTION: [1-2 sentence compelling product description highlighting aesthetics and benefits, ending with a Call-To-Action mentioning the brand name]\n"
+            "HOOK: [1 scroll-stopping hook in the requested hook style, with emoji]\n"
+            "DESCRIPTION: [2-3 sentences of high-end sensory copy describing what the viewer will feel/see, "
+            "then a direct call to action. Must sound premium, never cheap or spammy.]\n"
             "SOUND_VIBE: [Recommend a 2-word trending sound vibe, e.g. Upbeat Phonk, Luxury Lo-Fi, Energetic Trap, or Cinematic Beat]\n"
-            "HASHTAGS: [Exactly 6 to 8 trending hashtags directly relevant to this product and niche, starting with #]"
+            "HASHTAGS: [Exactly 12 to 14 hashtags starting with # : 3 brand/product tags, 4 niche fragrance tags, "
+            "3 Pakistan location tags, 4 viral reach tags. No duplicates.]"
         )
 
         content_parts = [{"type": "text", "text": prompt}]
@@ -207,8 +269,9 @@ class DualAICaptionGenerator:
         payload = {
             "model": model,
             "messages": [{"role": "user", "content": content_parts}],
-            "max_tokens": 350,
-            "temperature": 0.75
+            "max_tokens": 500,
+            "temperature": 0.95,
+            "top_p": 0.95
         }
 
         headers = {
@@ -259,7 +322,13 @@ class DualAICaptionGenerator:
 
     def _generate_smart_fallback(self, filename_hint: str, brand: str, platform: str) -> Tuple[str, str, Optional[str]]:
         """Intelligent offline fallback with Brand and Product details."""
-        hook = f"Obsessed with this new drop! ✨👀"
+        hook = random.choice([
+            "Obsessed with this new drop! ✨👀",
+            "This is the one everyone keeps asking about 💎",
+            "POV: your new signature just landed 🖤",
+            "Small detail, massive impression ✨",
+            "Save this before it sells out 👑",
+        ])
         desc = f"Experience the perfect blend of style and quality with {brand}. Save this post and tap the link in bio to explore the collection! 👇"
         caption = f"{hook}\n\n{desc}"
 
@@ -306,14 +375,16 @@ class DualAICaptionGenerator:
             f"Bottle Volume / Size: '{volume_ml}'\n"
             f"Fragrance Accords / Notes: '{scent_notes}'\n"
             f"Pricing / Special Offer: '{price_offer}'\n"
-            f"Destination Platform: {platform.upper()}\n\n"
+            f"Destination Platform: {platform.upper()}\n"
+            f"{_creative_brief()}\n\n"
             "Write a 100% authentic, captivating, ultra-luxurious fragrance post description.\n"
-            "It must sound like a prestigious luxury perfume house.\n"
+            "It must sound like a prestigious luxury perfume house and match the product image if provided.\n"
             "Format your answer EXACTLY as:\n"
             "HOOK: [1 stunning luxury curiosity hook with emojis 👑, ✨, 💎]\n"
             f"DESCRIPTION: [3-4 sentences describing the alluring olfactory journey of '{product_name}'. Explicitly mention the '{volume_ml}' bottle size, 14+ hours beast-mode longevity, projection, and compliment factor. Mention the offer '{price_offer}'. End with this exact checkout and contact block:\n🌐 𝐖𝐞𝐛𝐬𝐢𝐭𝐞 𝐂𝐡𝐞𝐜𝐤𝐨𝐮𝐭: janisperfumes.com\n💬 𝐏𝐫𝐞𝐟𝐞𝐫 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩: 03134454899\n📩 𝐒𝐞𝐧𝐝 𝐮𝐬 𝐚 𝐃𝐌 𝐭𝐨 𝐨𝐫𝐝𝐞𝐫 𝐝𝐢𝐫𝐞𝐜𝐭𝐥𝐲!]\n"
             "SOUND_VIBE: [2-word luxury sound vibe, e.g. Royal Amber or Luxury Lo-Fi]\n"
-            f"HASHTAGS: [Exactly 10 to 12 authentic, trending perfume hashtags targeting fragrance lovers, e.g. #{clean_brand} #{clean_prod} #{clean_vol}Perfume #LuxuryFragrance #PerfumesPakistan #LongLastingScent #OudLovers #ScentOfTheDay #KarachiPerfumes #LahoreShopping #EauDeParfum]"
+            f"HASHTAGS: [Exactly 12 to 14 hashtags starting with # : 3 brand/product tags (e.g. #{clean_brand} #{clean_prod} #{clean_vol}Perfume), "
+            "4 niche fragrance tags, 3 Pakistan location tags, 4 viral reach tags. No duplicates, no repeated tags from previous posts.]"
         )
 
         b64_img, mime_type = (None, "image/jpeg")
@@ -328,7 +399,7 @@ class DualAICaptionGenerator:
                 parts = [{"text": prompt}]
                 if b64_img:
                     parts.append({"inline_data": {"mime_type": mime_type, "data": b64_img}})
-                resp = requests.post(url, json={"contents": [{"parts": parts}], "generationConfig": {"temperature": 0.75, "maxOutputTokens": 450}}, timeout=15)
+                resp = requests.post(url, json={"contents": [{"parts": parts}], "generationConfig": {"temperature": 0.95, "topP": 0.95, "maxOutputTokens": 600}}, timeout=20)
                 data = resp.json()
                 if "candidates" in data and data["candidates"]:
                     raw_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
@@ -346,7 +417,7 @@ class DualAICaptionGenerator:
                 parts = [{"type": "text", "text": prompt}]
                 if b64_img:
                     parts.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}})
-                resp = requests.post(url, json={"model": model, "messages": [{"role": "user", "content": parts}], "max_tokens": 450, "temperature": 0.75}, headers={"Authorization": f"Bearer {openai_key}"}, timeout=15)
+                resp = requests.post(url, json={"model": model, "messages": [{"role": "user", "content": parts}], "max_tokens": 600, "temperature": 0.95, "top_p": 0.95}, headers={"Authorization": f"Bearer {openai_key}"}, timeout=20)
                 data = resp.json()
                 if "choices" in data and data["choices"]:
                     raw_text = data["choices"][0]["message"]["content"].strip()
@@ -356,8 +427,16 @@ class DualAICaptionGenerator:
             except Exception as e:
                 logger.warning(f"[AIVision] OpenAI perfume copy error: {e}")
 
-        # 3. Mastercrafted 100% Authentic Luxury Copywriting Fallback
-        hook = f"👑 Step into Unrivaled Elegance with {product_name} by {brand} ✨"
+        # 3. Mastercrafted 100% Authentic Luxury Copywriting Fallback (rotates every time)
+        fallback_hooks = [
+            f"👑 Step into Unrivaled Elegance with {product_name} by {brand} ✨",
+            f"The scent people stop you to ask about - {product_name} 💎",
+            f"One spray and the room remembers you. {product_name} by {brand} ✨",
+            f"POV: you found your signature scent - {product_name} 🖤",
+            f"Quiet luxury in a bottle: {product_name} by {brand} 👑",
+            f"Winter nights deserve {product_name}. Oud, amber, pure obsession 🥀",
+        ]
+        hook = random.choice(fallback_hooks)
         desc = (
             f"Designed for those who appreciate true artistry in perfumery, {product_name} is a masterwork of olfactory sophistication.\n\n"
             f"💎 Notes Profile: Opening with {scent_notes}, delivering a smooth, intoxicating aura that commands compliments wherever you go.\n"
@@ -368,22 +447,8 @@ class DualAICaptionGenerator:
         )
         caption = f"{hook}\n\n{desc}"
 
-        tags = [
-            f"#{clean_brand}",
-            f"#{clean_prod}",
-            f"#{clean_vol}Perfume",
-            "#LuxuryFragrance",
-            "#PerfumesPakistan",
-            "#LongLastingScent",
-            "#OudLovers",
-            "#FragranceCommunity",
-            "#ScentOfTheDay",
-            "#KarachiPerfumes",
-            "#LahoreShopping",
-            "#PakistaniBrands",
-            "#EauDeParfum"
-        ]
-        return append_brand_footer(caption), " ".join(tags), "Royal Velvet"
+        tags = _build_hashtags(clean_brand, clean_prod, clean_vol, count=14)
+        return append_brand_footer(caption), tags, random.choice(["Royal Velvet", "Luxury Lo-Fi", "Cinematic Oud", "Velvet Amber"])
 
 
 # Global singleton

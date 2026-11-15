@@ -179,7 +179,9 @@ class MainWindow:
 
         # Section 2: Meta Graph API
         self._create_section_label(settings_canvas, "📸 Meta Graph API (Instagram Reels & Facebook)")
-        self.entry_meta_token = self._create_field(settings_canvas, "Meta Access Token:", cfg.meta_access_token, show="*")
+        # No Meta token field: the connection comes from "Connect with Facebook"
+        # on the web dashboard. Showing a token here only caused expired-token pain.
+        self._create_section_label(settings_canvas, "Facebook / Instagram: web dashboard -> Settings -> Connect with Facebook")
         self.entry_ig_id = self._create_field(settings_canvas, "Instagram Account ID:", cfg.instagram_account_id)
         self.entry_fb_id = self._create_field(settings_canvas, "Facebook Page ID (Optional):", cfg.facebook_page_id)
 
@@ -252,9 +254,6 @@ class MainWindow:
                 max_delay_minutes=int(self.entry_max_delay.get().strip() or "240"),
                 image_duration_seconds=int(self.entry_duration.get().strip() or "8")
             )
-            typed_token = self.entry_meta_token.get().strip()
-            if typed_token:
-                updates["meta_access_token"] = typed_token
             config_manager.update(**updates)
             messagebox.showinfo("Settings Saved", "All API credentials and delay limits have been successfully saved!")
             logger.info("[Settings] Updated configurations saved to config.json.")
@@ -262,10 +261,7 @@ class MainWindow:
             messagebox.showerror("Error", f"Failed to save settings: {e}")
 
     def _test_meta_api(self):
-        uploader = MetaUploader(
-            access_token=self.entry_meta_token.get().strip(),
-            instagram_account_id=self.entry_ig_id.get().strip()
-        )
+        uploader = MetaUploader(instagram_account_id=self.entry_ig_id.get().strip())
         is_valid, msg = uploader.validate_credentials()
         if is_valid:
             messagebox.showinfo("Meta Graph API Success", msg)

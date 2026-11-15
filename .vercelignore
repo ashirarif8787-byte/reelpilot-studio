@@ -1,0 +1,25 @@
+# Never upload credentials or local runtime state
+.env
+.env.*
+config.json
+connected_accounts.json
+*.db
+*.sqlite
+*.log
+
+# Local media and generated output
+processed_media/
+watch_folders/
+watch_folders_archive/
+studio_uploads/
+audio_library/
+output/
+artifacts/
+tmp_analysis/
+
+# Tooling
+.venv/
+venv/
+__pycache__/
+*.pyc
+.git/
