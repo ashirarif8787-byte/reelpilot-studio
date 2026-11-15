@@ -13,15 +13,15 @@ from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from app.utils.logger import logger
 
-GITHUB_REPO = "ashirarif8787-byte/reelpilot-studio"
-GITHUB_PATH = "data/queue.json"
-PERMANENT_GITHUB_TOKEN = "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"
+GITHUB_REPO = os.environ.get("QUEUE_GITHUB_REPO", "ashirarif8787-byte/reelpilot-studio")
+GITHUB_PATH = os.environ.get("QUEUE_GITHUB_PATH", "data/queue.json")
 
 class CloudQueueManager:
     def __init__(self):
         self.repo = GITHUB_REPO
         self.path = GITHUB_PATH
-        self.token = os.environ.get("GITHUB_TOKEN", "").strip() or PERMANENT_GITHUB_TOKEN
+        # Never hardcode a token in source: read it from the environment only.
+        self.token = os.environ.get("GITHUB_TOKEN", "").strip()
 
     def _get_headers(self) -> Dict[str, str]:
         return {

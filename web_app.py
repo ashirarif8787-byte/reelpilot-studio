@@ -532,6 +532,11 @@ def api_accounts_health():
         }
     data["redirect_uri"] = _oauth_redirect_uri()
     data["app_configured"] = meta_auth.is_configured()
+    try:
+        from app.modules import remote_store
+        data["state_store"] = remote_store.backend()
+    except Exception:
+        data["state_store"] = "unknown"
     return jsonify(data)
 
 @app.route("/api/meta/pages")
