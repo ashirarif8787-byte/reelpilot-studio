@@ -38,3 +38,5 @@ Thumbs.db
 
 watch_folders_archive/
 studio_uploads/
+.vercel
+.env*
