@@ -63,11 +63,12 @@ def _cfg():
 
 
 def app_id() -> str:
-    return (_cfg().meta_app_id or os.getenv("META_APP_ID", "")).strip()
+    # .env wins, so a rotated/updated value is always the one used.
+    return (os.getenv("META_APP_ID", "") or _cfg().meta_app_id or "").strip()
 
 
 def app_secret() -> str:
-    return (_cfg().meta_app_secret or os.getenv("META_APP_SECRET", "")).strip()
+    return (os.getenv("META_APP_SECRET", "") or _cfg().meta_app_secret or "").strip()
 
 
 def is_configured() -> bool:
